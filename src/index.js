@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url'
 
 import { setConfig } from './config.js'
 import { defraIdRoutes } from './defra-id/routes.js'
+import { entraRoutes } from './entra/routes.js'
 
 export const PLUGIN_NAME = 'hapi-oidc-auth'
 
@@ -47,12 +48,13 @@ export const hapiOidcAuth = {
       server.expose('options', resolved)
       server.expose('viewsPath', viewsPath)
 
-      // Applicant journey (Defra Customer Identity). Routes render the plugin's
-      // own views, which the host resolves via `viewsPath` (see README).
-      await server.register(defraIdRoutes)
+      // Both journeys — Applicant (Defra Customer Identity) and Case Officer
+      // (Entra). Their routes render the plugin's own views, which the host
+      // resolves via `viewsPath` (see README).
+      await server.register([defraIdRoutes, entraRoutes])
 
-      // Still to wire: the entra (case officer) journey; the shared chooser /
-      // account / sign-out routes; the `account` header view context.
+      // Still to wire: the shared chooser / account / sign-out routes and the
+      // `account` header view context.
     }
   }
 }
