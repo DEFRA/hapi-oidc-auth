@@ -8,6 +8,8 @@
 // per-environment values + secrets come from the host (cdp-app-config + CDP
 // Secrets). The plugin holds no secrets.
 
+import { setConfig } from './config.js'
+
 export const PLUGIN_NAME = 'hapi-oidc-auth'
 
 // Validate the register options up front so misconfiguration fails fast with a
@@ -29,21 +31,16 @@ export const hapiOidcAuth = {
     register(server, options) {
       assertOptions(options)
 
-      const { defraId, entra, redirects = {} } = options
+      // Resolve + store the config (applying defaults) so the journey modules
+      // read it via getConfig() instead of a host-specific config module.
+      const resolved = setConfig(options)
+      server.expose('options', resolved)
 
-      // Expose the resolved config so the (to-be-extracted) route/service
-      // modules can read it via server.plugins[PLUGIN_NAME] instead of importing
-      // a host-specific config module.
-      server.expose('options', { defraId, entra, redirects })
-
-      // TODO (extraction from pesticides-poc-frontend, in sequence):
-      //   - register the plugin's Nunjucks view path
-      //   - register the defra-id (applicant) routes + service + client
-      //   - register the entra (case officer) routes + service + client
-      //   - register the shared chooser / account / sign-out routes
-      //   - add the `account` header view context (build-account)
-      //   - expose the requireAuth / requireRole guards
-      //   - mock mode identities
+      // The defra-id (applicant) journey logic is extracted and unit-tested
+      // (client/service/session/oidc-common/mock/permissions). Still to wire in:
+      //   - the plugin's Nunjucks view path + the defra-id/entra/shared ROUTES
+      //   - the entra (case officer) journey
+      //   - the `account` header view context and requireAuth/requireRole guards
     }
   }
 }
