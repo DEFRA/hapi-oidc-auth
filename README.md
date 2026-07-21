@@ -93,6 +93,29 @@ await server.register({
 - The `account` view context (signed-in name/role + sign-out) for the header.
 - Session + role guards (`requireAuth`, `requireRole`) and mock mode.
 
+## Views (host wiring)
+
+The plugin's sign-in views **extend the host's `layouts/page.njk`** so they inherit
+the host's GOV.UK chrome. For that to resolve, the host adds the plugin's exported
+`viewsPath` to both its nunjucks loader and its `@hapi/vision` `path`:
+
+```js
+import { hapiOidcAuth, viewsPath } from '@defra/hapi-oidc-auth'
+
+const environment = nunjucks.configure(
+  ['node_modules/govuk-frontend/dist/', 'server/common/templates', viewsPath],
+  { autoescape: true }
+)
+
+server.views({
+  engines: { njk: /* ...compile with `environment`... */ },
+  relativeTo: /* host root */,
+  path: ['server/routes', viewsPath] // so h.view('defra-id/sign-in') resolves
+})
+```
+
+`test-helpers/view-server.js` is a minimal working example of this wiring.
+
 ## Scripts
 
 ```sh

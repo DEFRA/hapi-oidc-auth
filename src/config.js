@@ -5,6 +5,8 @@
 //
 // Single resolved instance per process, set once when the plugin registers.
 
+import { DEFAULT_CONTENT } from './content.js'
+
 // Defra Identity claim contract. Defaults match the assumed contract; a consumer
 // overrides any name whose live token differs (no code change needed).
 const DEFAULT_DEFRA_ID_CLAIMS = {
@@ -56,11 +58,25 @@ function resolveEntra(entra = {}) {
   }
 }
 
+// Per-section shallow merge of consumer content overrides onto the defaults, so a
+// consumer can override just the strings it cares about.
+function resolveContent(content = {}) {
+  const merged = {}
+  for (const section of Object.keys(DEFAULT_CONTENT)) {
+    merged[section] = {
+      ...DEFAULT_CONTENT[section],
+      ...(content[section] ?? {})
+    }
+  }
+  return merged
+}
+
 export function setConfig(options = {}) {
   resolved = {
     defraId: resolveDefraId(options.defraId),
     entra: resolveEntra(options.entra),
-    redirects: { ...DEFAULT_REDIRECTS, ...(options.redirects ?? {}) }
+    redirects: { ...DEFAULT_REDIRECTS, ...(options.redirects ?? {}) },
+    content: resolveContent(options.content)
   }
   return resolved
 }

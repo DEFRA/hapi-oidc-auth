@@ -8,9 +8,19 @@
 // per-environment values + secrets come from the host (cdp-app-config + CDP
 // Secrets). The plugin holds no secrets.
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { setConfig } from './config.js'
+import { defraIdRoutes } from './defra-id/routes.js'
 
 export const PLUGIN_NAME = 'hapi-oidc-auth'
+
+// Directory holding the plugin's Nunjucks views. The host must add this to its
+// @hapi/vision `path` and its nunjucks loader so `h.view('defra-id/sign-in')`
+// resolves and the views can extend the host's `layouts/page.njk`. Exported so
+// the host can wire it in (see README → Views).
+export const viewsPath = path.dirname(fileURLToPath(import.meta.url))
 
 // Validate the register options up front so misconfiguration fails fast with a
 // clear message rather than a confusing runtime error mid sign-in.
@@ -28,19 +38,21 @@ export const hapiOidcAuth = {
   plugin: {
     name: PLUGIN_NAME,
     version: '0.1.0',
-    register(server, options) {
+    async register(server, options) {
       assertOptions(options)
 
       // Resolve + store the config (applying defaults) so the journey modules
       // read it via getConfig() instead of a host-specific config module.
       const resolved = setConfig(options)
       server.expose('options', resolved)
+      server.expose('viewsPath', viewsPath)
 
-      // The defra-id (applicant) journey logic is extracted and unit-tested
-      // (client/service/session/oidc-common/mock/permissions). Still to wire in:
-      //   - the plugin's Nunjucks view path + the defra-id/entra/shared ROUTES
-      //   - the entra (case officer) journey
-      //   - the `account` header view context and requireAuth/requireRole guards
+      // Applicant journey (Defra Customer Identity). Routes render the plugin's
+      // own views, which the host resolves via `viewsPath` (see README).
+      await server.register(defraIdRoutes)
+
+      // Still to wire: the entra (case officer) journey; the shared chooser /
+      // account / sign-out routes; the `account` header view context.
     }
   }
 }

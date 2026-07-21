@@ -28,12 +28,14 @@
   },
   "peerDependencies": {
     "@hapi/hapi": ">=21",
+    "@hapi/vision": ">=7",
     "@hapi/yar": ">=11",
     "govuk-frontend": ">=6",
     "nunjucks": ">=3"
   },
   "devDependencies": {
     "@hapi/hapi": "21.4.9",
+    "@hapi/vision": "7.0.3",
     "@hapi/yar": "11.0.3",
     "@vitest/coverage-v8": "4.1.10",
     "eslint": "9.39.2",
