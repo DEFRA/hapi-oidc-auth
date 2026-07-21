@@ -54,4 +54,22 @@ describe('defra-id routes (mock mode)', () => {
     expect(callback.statusCode).toBe(302)
     expect(callback.headers.location).toBe('/register/type')
   })
+
+  test('a callback with a mismatched state returns 422 (not a 500) via the host error boundary', async () => {
+    const start = await server.inject({
+      method: 'GET',
+      url: '/auth/defra-id/start'
+    })
+    const cookie = start.headers['set-cookie'][0].split(';')[0]
+
+    const res = await server.inject({
+      method: 'GET',
+      url: '/auth/defra-id/callback?code=mock-auth-code&state=WRONG-STATE',
+      headers: { cookie }
+    })
+
+    // The service throws createAuthError(422); without a host onPreResponse that
+    // recovers the thrown statusCode, Hapi would boomify it to 500.
+    expect(res.statusCode).toBe(422)
+  })
 })

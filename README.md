@@ -93,6 +93,50 @@ await server.register({
 - The `account` view context (signed-in name/role + sign-out) for the header.
 - Session + role guards (`requireAuth`, `requireRole`) and mock mode.
 
+## What the host app must provide
+
+Beyond the peer dependencies, a host must wire up three things for the plugin to
+work correctly. The two below are easy to miss because they fail silently in ways
+that only show up in live mode:
+
+**1. An `onPreResponse` error boundary (or you get 500s instead of 401/422).**
+The plugin's callbacks `throw` plain errors carrying `.statusCode` (401 on a bad
+token, 422 on a bad state/nonce or incomplete config). Hapi boomifies a non-Boom
+throw to **500**, so the host must recover the intended status:
+
+```js
+server.ext('onPreResponse', (request, h) => {
+  const response = request.response
+  if (response?.isBoom) {
+    const intended = response.statusCode // the thrown .statusCode survives boomify
+    if (Number.isInteger(intended) && intended >= 400 && intended < 600) {
+      return h
+        .response(response.message || 'Error')
+        .code(intended)
+        .takeover()
+    }
+  }
+  return h.continue
+})
+```
+
+**2. A `SameSite=None` session cookie for live mode.**
+Live sign-in uses `response_mode=form_post`, so the IdP returns the result via a
+**cross-site POST** to the callback. A `Lax`/`Strict` session cookie is **not sent**
+on that request, so `@hapi/yar` loses the OIDC `state`/`nonce`/PKCE verifier and
+every live callback 422s. Your yar `cookieOptions` must therefore set
+`isSameSite: 'None'` **when** `isSecure: true` (browsers drop a non-Secure `None`
+cookie, so keep them tied — local HTTP stays `Lax`, which is fine because local
+uses mock mode / same-site redirects):
+
+```js
+cookieOptions: { isSecure, isSameSite: isSecure ? 'None' : 'Lax' }
+```
+
+**3. The plugin's views** — see [Views (host wiring)](#views-host-wiring) below.
+
+`test-helpers/view-server.js` is a minimal reference host wiring all three.
+
 ## Guarding your own pages
 
 The plugin exports Hapi `pre`-handler guards and helpers so a host can protect its

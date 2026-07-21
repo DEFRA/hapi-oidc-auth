@@ -64,6 +64,25 @@ export async function buildTestServer(options) {
   ])
 
   await server.register({ plugin: hapiOidcAuth, options })
+
+  // Reference host error boundary. The plugin's callbacks throw plain errors
+  // carrying `.statusCode` (401/422); Hapi boomifies a non-Boom throw to 500, so
+  // the host must recover the intended status in onPreResponse. A real host wires
+  // its own equivalent (see README → "What the host app must provide").
+  server.ext('onPreResponse', (request, h) => {
+    const response = request.response
+    if (response?.isBoom) {
+      const intended = response.statusCode
+      if (Number.isInteger(intended) && intended >= 400 && intended < 600) {
+        return h
+          .response(response.message || 'Error')
+          .code(intended)
+          .takeover()
+      }
+    }
+    return h.continue
+  })
+
   await server.initialize()
   return server
 }
