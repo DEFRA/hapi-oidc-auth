@@ -47,6 +47,20 @@ export const DEFAULT_CONTENT = {
     signInButton: SIGN_IN_BUTTON
   },
 
+  // Neutral sign-in chooser (applicant vs case officer). Generic by default;
+  // a host can override e.g. the caption with its service name.
+  chooser: {
+    pageTitle: 'Sign in',
+    heading: 'Sign in',
+    caption: '',
+    intro: 'Choose how you want to sign in:',
+    applicantLinkText: 'Applicants',
+    applicantHint:
+      '— sign in with Defra Customer Identity to register and manage applications.',
+    caseOfficerLinkText: 'Case officers',
+    caseOfficerHint: '— staff sign in with their Defra account.'
+  },
+
   account: {
     pageTitle: 'Your account',
     heading: 'You are signed in',

@@ -93,6 +93,32 @@ await server.register({
 - The `account` view context (signed-in name/role + sign-out) for the header.
 - Session + role guards (`requireAuth`, `requireRole`) and mock mode.
 
+## Guarding your own pages
+
+The plugin exports Hapi `pre`-handler guards and helpers so a host can protect its
+own routes and read the session:
+
+```js
+import {
+  requireAuth, // any signed-in user
+  requireCaseOfficer, // role === case_officer
+  requireApplicant, // role === applicant
+  getAuthSession,
+  buildAccount, // { name, roleLabel, accountUrl, signOutUrl } | null — for the header
+  PAGE_PATHS
+} from '@defra/hapi-oidc-auth'
+
+server.route({
+  method: 'GET',
+  path: '/admin/applications',
+  options: { pre: [{ method: requireCaseOfficer }] },
+  handler: (request, h) => h.view('admin', { session: getAuthSession(request) })
+})
+```
+
+Wire `buildAccount(request)` into your Nunjucks view context (e.g. as `account`)
+to show the signed-in name + sign-out link in your header.
+
 ## Views (host wiring)
 
 The plugin's sign-in views **extend the host's `layouts/page.njk`** so they inherit
