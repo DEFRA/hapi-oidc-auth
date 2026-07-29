@@ -12,25 +12,39 @@ session, role guards), a **mock mode** for local/demo, its own sign-in views,
 and the signed-in header account block — so a consuming app adds login by
 registering the plugin and passing its config.
 
-> **Status: work in progress.** This is the initial package foundation and the
-> register-options contract. The journey implementations are being extracted
-> from `pesticides-poc-frontend` (where they are live-verified). See the
-> proposal for scope and sequence.
+> **Status:** extracted from `pesticides-poc-frontend` and integrated back into
+> it (local auth removed). **Live-verified on CDP dev** (case-officer Entra
+> sign-in round-trip). Published to npm as a public `@defra/*` package.
+> Full docs: [the wiki](https://github.com/DEFRA/hapi-oidc-auth/wiki).
 
 ## Install
 
-While the API is settling, consume via a git tag (bypasses the CDP
-`min-release-age` throttle):
+Published to the public npm registry (alongside the other `@defra/*`
+packages), so a plain `npm install` works — no git protocol or SSH required:
+
+```sh
+npm install @defra/hapi-oidc-auth
+```
 
 ```jsonc
 // package.json
 "dependencies": {
-  "@defra/hapi-oidc-auth": "github:DEFRA/hapi-oidc-auth#v0.1.0"
+  "@defra/hapi-oidc-auth": "^0.1.2"
 }
 ```
 
-Once stable it will be published to npm as `@defra/hapi-oidc-auth` (public,
-alongside the other `@defra/*` packages).
+## Releasing
+
+The package version in `package.json` is what gets published — bump it (SemVer)
+before releasing. First-time / manual publish (requires membership of the
+`@defra` npm org with publish rights):
+
+```sh
+npm login              # once, if not already authenticated
+npm publish            # publishConfig.access=public is set, so the scoped
+                       # package is published publicly
+git tag v$(node -p "require('./package.json').version") && git push --tags
+```
 
 ## Usage
 
