@@ -1,6 +1,6 @@
 {
   "name": "@defra/hapi-oidc-auth",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "description": "Reusable Hapi plugin for DEFRA case-officer sign-in via Microsoft Entra ID (OIDC auth-code + PKCE).",
   "type": "module",
   "main": "src/index.js",

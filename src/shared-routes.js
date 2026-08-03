@@ -1,0 +1,46 @@
+// Shared auth routes.
+//
+//   GET /auth/sign-out   sign out of Entra and clear the local session
+//   GET /auth/account    authenticated "who am I" page (session diagnostic / landing)
+
+import { getConfig } from './config.js'
+import { LANG_EN } from './content.js'
+import { signOutEntra } from './entra/service.js'
+import { PAGE_PATHS, getAuthSession, requireAuth } from './session.js'
+
+const signOut = {
+  async handler(request, h) {
+    // signOutEntra builds a live end-session URL (if configured) before clearing
+    // the local session, then returns it; fall back to the configured redirect.
+    const signOutUrl = await signOutEntra(request)
+    return h.redirect(signOutUrl || getConfig().redirects.signOut)
+  }
+}
+
+const account = {
+  options: { pre: [{ method: requireAuth }] },
+  handler(request, h) {
+    const { account: accountContent } = getConfig().content
+    const session = getAuthSession(request)
+
+    return h.view('account', {
+      pageTitle: accountContent.pageTitle,
+      heading: accountContent.heading,
+      t: accountContent,
+      session,
+      lang: LANG_EN
+    })
+  }
+}
+
+export const sharedAuthRoutes = {
+  plugin: {
+    name: 'auth-shared',
+    register(server) {
+      server.route([
+        { method: 'GET', path: PAGE_PATHS.SIGN_OUT, ...signOut },
+        { method: 'GET', path: PAGE_PATHS.ACCOUNT, ...account }
+      ])
+    }
+  }
+}
