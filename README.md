@@ -34,21 +34,24 @@ await server.register({
       publicBaseUrl: process.env.ENTRA_PUBLIC_BASE_URL,
       redirectPath: '/auth/entra/callback',
       signOutRedirectUrl: '/',
-      caseOfficerRoleValue: 'case_officer' // must match the Entra app-role value
+      // Entra app-role value(s) that grant case-officer access. Each project can
+      // name its own Entra app role — pass whatever value(s) its tokens carry.
+      roleValues: ['case_officer']
     },
 
-    // Where the case officer lands after sign-in / out (app-specific)
+    // Where the user lands after sign-in / out (app-specific)
     redirects: {
-      caseOfficer: '/admin/applications',
+      postLogin: '/admin/applications',
       signOut: '/'
     }
   }
 })
 ```
 
-`case_officer` access is granted only when the Entra ID token's `roles` claim
-carries the configured `caseOfficerRoleValue` — define that App role on the
-Entra app registration and assign it to the relevant group/users.
+Case-officer access is granted only when the Entra ID token's `roles` claim
+carries one of the configured `roleValues` — define that App role on the Entra
+app registration and assign it to the relevant group/users. `roleValues` also
+accepts a single string (`roleValues: 'ocr_officer'`).
 
 ## What the host app must provide
 

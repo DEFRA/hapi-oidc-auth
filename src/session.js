@@ -114,11 +114,10 @@ function isSafeLocalPath(value) {
 export function resolvePostLoginRedirect(returnTo) {
   const { redirects } = getConfig()
   const target = isSafeLocalPath(returnTo) ? returnTo : ''
-  const isAdminPath = target.startsWith('/admin')
 
-  // Case officers land in the admin area: honour an admin deep-link, otherwise
-  // the configured case-officer home.
-  return isAdminPath ? target : redirects.caseOfficer
+  // Honour a safe local returnTo (deep-link back to the attempted page),
+  // otherwise the configured post-login landing page.
+  return target || redirects.postLogin
 }
 
 // Apply an authenticated profile to the session. Role + scope come from the

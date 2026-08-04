@@ -14,10 +14,9 @@ import {
 } from './session.js'
 
 // resolvePostLoginRedirect reads the configured redirects, so initialise the
-// config holder with the defaults (caseOfficer '/admin/applications') before
-// each test.
+// config holder before each test (postLogin defaults to '/').
 beforeEach(() => {
-  setConfig({ entra: { mode: 'mock' } })
+  setConfig({ entra: { mode: 'mock' }, redirects: { postLogin: '/dashboard' } })
 })
 
 function fakeYar(initial = {}) {
@@ -63,33 +62,23 @@ function fakeH() {
 }
 
 describe('#resolvePostLoginRedirect', () => {
-  test('defaults to the admin applications view', () => {
-    expect(resolvePostLoginRedirect('')).toBe('/admin/applications')
+  test('defaults to the configured post-login page', () => {
+    expect(resolvePostLoginRedirect('')).toBe('/dashboard')
   })
 
-  test('follows an admin returnTo', () => {
+  test('honours a safe local returnTo (deep-link back to the attempted page)', () => {
     expect(resolvePostLoginRedirect('/admin/applications')).toBe(
       '/admin/applications'
     )
   })
 
-  test('is not dropped onto a non-admin returnTo', () => {
-    expect(resolvePostLoginRedirect('/register/type')).toBe(
-      '/admin/applications'
-    )
-  })
-
   test('blocks open-redirect (protocol-relative) returnTo', () => {
-    expect(resolvePostLoginRedirect('//evil.example.com')).toBe(
-      '/admin/applications'
-    )
+    expect(resolvePostLoginRedirect('//evil.example.com')).toBe('/dashboard')
   })
 
   test('blocks open-redirect (backslash) returnTo', () => {
     // Browsers normalise `/\evil.com` to `https://evil.com` in a Location header.
-    expect(resolvePostLoginRedirect('/\\evil.example.com')).toBe(
-      '/admin/applications'
-    )
+    expect(resolvePostLoginRedirect('/\\evil.example.com')).toBe('/dashboard')
   })
 })
 
@@ -118,26 +107,24 @@ describe('#applyProfile', () => {
     }
 
     const profile = {
-      subject: 'urn:applicant',
-      email: 'alex.grower@example.com',
-      name: 'Alex Grower',
-      role: 'applicant',
-      roles: ['applicant'],
-      organisationId: '5566778',
-      organisations: [{ relationshipId: '5566778', organisationId: '5566778' }]
+      subject: 'urn:staff',
+      email: 'casey.officer@example.gov.uk',
+      name: 'Casey Officer',
+      role: 'case_officer',
+      roles: ['case_officer']
     }
 
     const session = await applyProfile(request, {
-      provider: 'defra-customer-identity',
+      provider: 'microsoft-entra-id',
       profile,
       mode: 'mock'
     })
 
     expect(session.isAuthenticated).toBe(true)
-    expect(session.provider).toBe('defra-customer-identity')
-    expect(session.role).toBe('applicant')
-    expect(session.roleLabel).toBe('Farmer')
-    expect(session.scope).toContain('applicant')
+    expect(session.provider).toBe('microsoft-entra-id')
+    expect(session.role).toBe('case_officer')
+    expect(session.roleLabel).toBe('Case officer')
+    expect(session.scope).toContain('case_officer')
     expect(session.pendingState).toBe('')
   })
 

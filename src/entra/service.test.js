@@ -72,7 +72,10 @@ function setLiveConfig() {
 }
 
 beforeEach(() => {
-  setConfig({ defraId: { mode: 'mock' }, entra: { mode: 'mock' } })
+  setConfig({
+    entra: { mode: 'mock' },
+    redirects: { postLogin: '/admin/applications' }
+  })
 })
 
 afterEach(() => {

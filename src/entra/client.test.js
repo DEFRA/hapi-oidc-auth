@@ -59,7 +59,7 @@ function setLiveConfig(overrides = {}) {
       clientId: 'entra-client',
       clientSecret: 'entra-secret',
       signOutRedirectUrl: 'https://app.example/bye',
-      caseOfficerRoleValue: 'case_officer',
+      roleValues: ['case_officer'],
       ...overrides
     }
   })
@@ -124,7 +124,7 @@ describe('#startLiveEntra', () => {
 })
 
 describe('#mapEntraClaimsToProfile', () => {
-  const entraConfig = { roles: { caseOfficerValue: 'case_officer' } }
+  const entraConfig = { roleValues: ['case_officer'] }
 
   test('maps oid/preferred_username and flags the case-officer role', () => {
     const profile = mapEntraClaimsToProfile(
@@ -328,10 +328,31 @@ describe('#mapEntraClaimsToProfile (single-value roles)', () => {
   test('coerces a string roles claim into an array', () => {
     const profile = mapEntraClaimsToProfile(
       { oid: 'oid-1', roles: 'case_officer' },
-      { roles: { caseOfficerValue: 'case_officer' } }
+      { roleValues: ['case_officer'] }
     )
     expect(profile.roles).toEqual(['case_officer'])
     expect(profile.hasCaseOfficerRole).toBe(true)
+  })
+})
+
+describe('#mapEntraClaimsToProfile (configurable role values)', () => {
+  test('grants case-officer access for a project-specific role value', () => {
+    // A project that names its Entra app role "ocr_officer" rather than "case_officer".
+    const profile = mapEntraClaimsToProfile(
+      { oid: 'oid-2', roles: ['ocr_officer'] },
+      { roleValues: ['ocr_officer'] }
+    )
+    expect(profile.hasCaseOfficerRole).toBe(true)
+    expect(profile.role).toBe('case_officer')
+  })
+
+  test('does not grant access when the token role is not in roleValues', () => {
+    const profile = mapEntraClaimsToProfile(
+      { oid: 'oid-3', roles: ['case_officer'] },
+      { roleValues: ['ocr_officer'] }
+    )
+    expect(profile.hasCaseOfficerRole).toBe(false)
+    expect(profile.role).toBe('')
   })
 })
 

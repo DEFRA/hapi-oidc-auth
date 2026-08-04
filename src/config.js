@@ -7,13 +7,29 @@
 
 import { DEFAULT_CONTENT } from './content.js'
 
-// Where the case officer lands after sign-in. App-specific, so overridable.
+// Where the user lands after sign-in / sign-out. App-specific, so overridable.
 const DEFAULT_REDIRECTS = {
-  caseOfficer: '/admin/applications',
+  postLogin: '/',
   signOut: '/'
 }
 
+// The Entra app-role value(s) that grant case-officer access default to
+// 'case_officer', but each consuming project can name its own Entra role — pass
+// `roleValues` to match whatever value(s) that project's tokens carry.
+const DEFAULT_ROLE_VALUES = ['case_officer']
+
 let resolved = null
+
+// Accept an array, a single string, or nothing (→ default) for roleValues.
+function normaliseRoleValues(value) {
+  if (Array.isArray(value)) {
+    return value.map(String)
+  }
+  if (value) {
+    return [String(value)]
+  }
+  return DEFAULT_ROLE_VALUES
+}
 
 function resolveEntra(entra = {}) {
   return {
@@ -24,7 +40,7 @@ function resolveEntra(entra = {}) {
     publicBaseUrl: entra.publicBaseUrl ?? '',
     redirectPath: entra.redirectPath ?? '/auth/entra/callback',
     signOutRedirectUrl: entra.signOutRedirectUrl ?? '/',
-    caseOfficerRoleValue: entra.caseOfficerRoleValue ?? 'case_officer'
+    roleValues: normaliseRoleValues(entra.roleValues)
   }
 }
 

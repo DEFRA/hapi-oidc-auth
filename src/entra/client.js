@@ -53,7 +53,7 @@ export function getEntraIdConfig() {
     scopes: ['openid', 'profile', 'offline_access'],
     usePkce: true,
     prompt: '',
-    roles: { caseOfficerValue: raw.caseOfficerRoleValue }
+    roleValues: raw.roleValues
   }
 }
 
@@ -131,7 +131,7 @@ export async function startLiveEntra(baseUrl, options = {}) {
     state,
     nonce,
     redirectUri,
-    returnTo: options.returnTo || getConfig().redirects.caseOfficer,
+    returnTo: options.returnTo || getConfig().redirects.postLogin,
     pkceVerifier: '',
     authorizationUrl: ''
   }
@@ -180,11 +180,13 @@ export function mapEntraClaimsToProfile(claims, entraConfig) {
   const firstName = String(claims.given_name || '')
   const lastName = String(claims.family_name || '')
   const roles = toStringArray(claims.roles)
-  const caseOfficerValue = String(
-    entraConfig.roles.caseOfficerValue || 'case_officer'
+  // The app-role value(s) that grant case-officer access are configurable per
+  // project (default ['case_officer']); match the token's `roles` against them.
+  const roleValues = (entraConfig.roleValues || ['case_officer']).map((value) =>
+    String(value).toLowerCase()
   )
-  const hasCaseOfficerRole = roles.some(
-    (value) => value.toLowerCase() === caseOfficerValue.toLowerCase()
+  const hasCaseOfficerRole = roles.some((value) =>
+    roleValues.includes(value.toLowerCase())
   )
 
   return {
@@ -194,9 +196,9 @@ export function mapEntraClaimsToProfile(claims, entraConfig) {
     lastName,
     name: buildDisplayName(firstName, lastName, claims.name),
     roles,
-    // Only grant the case-officer role when the token actually carries it.
-    // Assigning it unconditionally would let any authenticated Entra user past
-    // the case-officer guard on /admin/*.
+    // Only grant the case-officer role when the token actually carries one of the
+    // configured role values. Assigning it unconditionally would let any
+    // authenticated Entra user past the case-officer guard.
     role: hasCaseOfficerRole ? 'case_officer' : '',
     hasCaseOfficerRole,
     sessionId: String(claims.sid || ''),
@@ -257,7 +259,7 @@ export async function completeLiveEntra(callback, sessionState) {
     token: tokens.accessToken || tokens.idToken,
     idToken: tokens.idToken,
     refreshToken: tokens.refreshToken,
-    returnTo: sessionState.returnTo || getConfig().redirects.caseOfficer
+    returnTo: sessionState.returnTo || getConfig().redirects.postLogin
   }
 }
 

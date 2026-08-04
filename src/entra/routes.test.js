@@ -1,6 +1,9 @@
 import { buildTestServer } from '../../test-helpers/view-server.js'
 
-const mockOptions = { defraId: { mode: 'mock' }, entra: { mode: 'mock' } }
+const mockOptions = {
+  entra: { mode: 'mock' },
+  redirects: { postLogin: '/admin/applications' }
+}
 
 describe('entra routes (mock mode)', () => {
   let server

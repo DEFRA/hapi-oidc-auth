@@ -6,25 +6,29 @@ describe('#config', () => {
     expect(() => getConfig()).toThrow(/config not initialised/)
   })
 
-  test('setConfig applies entra defaults (mock mode, callback path, role value)', () => {
+  test('setConfig applies entra defaults (mock mode, callback path, role values)', () => {
     const cfg = setConfig({ entra: {} })
     expect(cfg.entra.mode).toBe('mock')
     expect(cfg.entra.redirectPath).toBe('/auth/entra/callback')
-    expect(cfg.entra.caseOfficerRoleValue).toBe('case_officer')
+    expect(cfg.entra.roleValues).toEqual(['case_officer'])
   })
 
   test('setConfig applies default redirects and merges overrides', () => {
     const cfg = setConfig({
       entra: {},
-      redirects: { caseOfficer: '/admin/home' }
+      redirects: { postLogin: '/dashboard' }
     })
-    expect(cfg.redirects.caseOfficer).toBe('/admin/home')
+    expect(cfg.redirects.postLogin).toBe('/dashboard')
     expect(cfg.redirects.signOut).toBe('/')
   })
 
-  test('consumer entra overrides win over the defaults', () => {
-    const cfg = setConfig({ entra: { caseOfficerRoleValue: 'ocr_officer' } })
-    expect(cfg.entra.caseOfficerRoleValue).toBe('ocr_officer')
-    expect(cfg.entra.mode).toBe('mock')
+  test('roleValues are configurable per project (array or single string)', () => {
+    expect(
+      setConfig({ entra: { roleValues: ['ocr_officer'] } }).entra.roleValues
+    ).toEqual(['ocr_officer'])
+    // a single string is accepted and wrapped
+    expect(
+      setConfig({ entra: { roleValues: 'admin' } }).entra.roleValues
+    ).toEqual(['admin'])
   })
 })

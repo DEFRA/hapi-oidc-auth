@@ -5,7 +5,7 @@ import { hapiOidcAuth, PLUGIN_NAME } from './index.js'
 const mockOptions = {
   entra: { mode: 'mock' },
   redirects: {
-    caseOfficer: '/admin/applications',
+    postLogin: '/admin/applications',
     signOut: '/'
   }
 }
@@ -17,7 +17,7 @@ describe('#hapiOidcAuth', () => {
 
     const exposed = server.plugins[PLUGIN_NAME].options
     expect(exposed.entra.mode).toBe('mock')
-    expect(exposed.redirects.caseOfficer).toBe('/admin/applications')
+    expect(exposed.redirects.postLogin).toBe('/admin/applications')
 
     await server.stop()
   })
