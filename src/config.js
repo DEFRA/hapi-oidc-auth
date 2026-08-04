@@ -35,7 +35,7 @@ function resolveContent(content = {}) {
   for (const section of Object.keys(DEFAULT_CONTENT)) {
     merged[section] = {
       ...DEFAULT_CONTENT[section],
-      ...(content[section] ?? {})
+      ...content[section]
     }
   }
   return merged
@@ -44,7 +44,7 @@ function resolveContent(content = {}) {
 export function setConfig(options = {}) {
   resolved = {
     entra: resolveEntra(options.entra),
-    redirects: { ...DEFAULT_REDIRECTS, ...(options.redirects ?? {}) },
+    redirects: { ...DEFAULT_REDIRECTS, ...options.redirects },
     content: resolveContent(options.content)
   }
   return resolved
