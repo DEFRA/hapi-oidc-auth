@@ -71,7 +71,27 @@ export async function parseJsonSafe(response) {
     return { raw: text }
   }
 
-  return JSON.parse(text)
+  try {
+    return JSON.parse(text)
+  } catch {
+    // The Content-Type claimed JSON but the body wasn't valid JSON (e.g. an HTML
+    // error/maintenance page from the IdP). Return the raw text instead of letting
+    // a SyntaxError bubble up as an unhandled 500.
+    return { raw: text }
+  }
+}
+
+// Parse a base64url JWT segment's JSON, throwing a clean 401 on malformed input
+// rather than letting a SyntaxError surface as a 500.
+function parseJwtSegment(segment, description) {
+  try {
+    return JSON.parse(fromBase64Url(segment))
+  } catch {
+    throw createHttpError(
+      HTTP_UNAUTHORIZED,
+      `Malformed ID token ${description}`
+    )
+  }
 }
 
 export function decodeJwtPayload(token) {
@@ -84,7 +104,11 @@ export function decodeJwtPayload(token) {
     return {}
   }
 
-  return JSON.parse(fromBase64Url(segments[1]))
+  try {
+    return JSON.parse(fromBase64Url(segments[1]))
+  } catch {
+    return {}
+  }
 }
 
 // First defined, non-empty value as a string (used for claim fallbacks).
@@ -120,19 +144,27 @@ export function normaliseTokenResponse(payload) {
   }
 }
 
-// Fetch a JSON document with simple per-caller, URL-keyed caching. `cache` is a
-// mutable holder object ({ url, document }) owned by the caller — used for both the
-// discovery document and the JWKS.
+// Fetch a JSON document with simple per-caller, URL-keyed caching + TTL. `cache`
+// is a mutable holder object ({ url, document, expiresAt }) owned by the caller —
+// used for both the discovery document and the JWKS.
 //
-// POST-POC NOTE: this cache is intentionally minimal for the POC. Before
-// production it should be revisited because it is:
-//   - in-process memory only — not shared across pods/instances;
-//   - has no TTL — a rotated discovery doc / JWKS would be served stale;
-//   - inconsistent with the project's existing caching, which already wires up
-//     Redis via @hapi/catbox (see common/helpers/session-cache/cache-engine.js).
-// A shared, TTL'd cache (or the platform's catbox policy) is the production path.
-async function loadJsonDocument(url, cache, errorMessage) {
-  if (cache.url === url && cache.document) {
+// The TTL is essential for the JWKS: Entra/B2C rotate signing keys routinely, so a
+// never-expiring cache would keep serving a stale key set and `verifyIdToken` would
+// throw "No matching JWKS key" until the process restarted. The TTL bounds that to
+// one refresh window; a fresh key rotation is picked up on the next reload.
+//
+// NOTE: this cache is in-process only (not shared across pods). For heavier use the
+// platform's catbox/Redis policy could back it, but per-process TTL caching is
+// correct and safe for the auth flow.
+const DEFAULT_DOCUMENT_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+async function loadJsonDocument(
+  url,
+  cache,
+  errorMessage,
+  ttlMs = DEFAULT_DOCUMENT_TTL_MS
+) {
+  if (cache.url === url && cache.document && cache.expiresAt > Date.now()) {
     return cache.document
   }
 
@@ -150,6 +182,7 @@ async function loadJsonDocument(url, cache, errorMessage) {
 
   cache.url = url
   cache.document = document
+  cache.expiresAt = Date.now() + ttlMs
   return document
 }
 
@@ -314,7 +347,7 @@ export function verifyIdToken(idToken, options = {}) {
   }
 
   const [headerB64, payloadB64, signatureB64] = segments
-  const header = JSON.parse(fromBase64Url(headerB64))
+  const header = parseJwtSegment(headerB64, 'header')
 
   verifyJwtSignature(
     `${headerB64}.${payloadB64}`,
@@ -323,7 +356,7 @@ export function verifyIdToken(idToken, options = {}) {
     options.jwks
   )
 
-  const claims = JSON.parse(fromBase64Url(payloadB64))
+  const claims = parseJwtSegment(payloadB64, 'payload')
   assertIdTokenClaims(claims, {
     issuer: options.issuer,
     audience: options.audience,

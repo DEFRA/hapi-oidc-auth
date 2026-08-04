@@ -87,6 +87,15 @@ describe('#parseJsonSafe', () => {
   test('parses JSON content', async () => {
     expect(await parseJsonSafe(jsonResponse({ a: 1 }))).toEqual({ a: 1 })
   })
+
+  test('returns { raw } when a JSON content-type carries a non-JSON body', async () => {
+    // e.g. the IdP returns an HTML error/maintenance page with a JSON content-type
+    const result = await parseJsonSafe({
+      headers: { get: () => 'application/json' },
+      text: async () => '<html>maintenance</html>'
+    })
+    expect(result).toEqual({ raw: '<html>maintenance</html>' })
+  })
 })
 
 describe('#decodeJwtPayload', () => {
@@ -253,6 +262,24 @@ describe('#loadJwks', () => {
     expect(await loadJwks('https://idp/keys', {}, 'err')).toEqual([])
     vi.unstubAllGlobals()
   })
+
+  test('refetches after the cache TTL expires (so rotated keys are picked up)', async () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(0)
+    const fetchMock = vi.fn(async () => jsonResponse({ keys: [{ kid: 'k1' }] }))
+    vi.stubGlobal('fetch', fetchMock)
+    const cache = {}
+
+    await loadJwks('https://idp/keys', cache, 'err') // fetch #1
+    await loadJwks('https://idp/keys', cache, 'err') // within TTL → cache hit
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    nowSpy.mockReturnValue(11 * 60 * 1000) // advance past the 10-minute TTL
+    await loadJwks('https://idp/keys', cache, 'err') // expired → refetch
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    nowSpy.mockRestore()
+    vi.unstubAllGlobals()
+  })
 })
 
 describe('#verifyIdToken', () => {
@@ -299,6 +326,14 @@ describe('#verifyIdToken', () => {
     const enc = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
     const token = `${enc({ alg: 'none', typ: 'JWT' })}.${enc({ sub: 'x' })}.`
     expect(() => verifyIdToken(token, verifyOpts())).toThrow(/algorithm/)
+  })
+
+  test('throws a clean "Malformed" error (not a raw SyntaxError) on a non-JSON segment', () => {
+    // header segment base64url-decodes to text that is not valid JSON
+    const token = `${toBase64Url('not-json')}.${toBase64Url('{}')}.sig`
+    expect(() => verifyIdToken(token, verifyOpts())).toThrow(
+      /Malformed ID token/
+    )
   })
 
   test('rejects when no JWKS key matches the kid', () => {
