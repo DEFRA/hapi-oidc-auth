@@ -130,7 +130,7 @@ describe('#startEntraSignIn / #completeEntraCallback (live)', () => {
       state: pending.pendingState
     })
 
-    expect(result.profile.role).toBe('case_officer')
+    expect(result.profile.roles).toEqual(['case_officer'])
     const session = getAuthSession(request)
     expect(session.isAuthenticated).toBe(true)
     expect(session.provider).toBe('microsoft-entra-id')
@@ -152,7 +152,7 @@ describe('#completeEntraCallback (mock)', () => {
     expect(result.returnTo).toBe('/admin/applications')
     const session = getAuthSession(request)
     expect(session.isAuthenticated).toBe(true)
-    expect(session.role).toBe('case_officer')
+    expect(session.roles).toEqual(['case_officer'])
     expect(session.provider).toBe('microsoft-entra-id')
   })
 })

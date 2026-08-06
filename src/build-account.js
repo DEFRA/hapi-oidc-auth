@@ -25,7 +25,7 @@ export function buildAccount(request) {
 
   return {
     name: session.name,
-    roleLabel: session.roleLabel || session.role,
+    roleLabel: (session.roles || []).join(', '),
     accountUrl: PAGE_PATHS.ACCOUNT,
     signOutUrl: PAGE_PATHS.SIGN_OUT
   }

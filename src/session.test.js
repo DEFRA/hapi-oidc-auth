@@ -8,7 +8,8 @@ import {
   getAuthSession,
   isAuthenticated,
   requireAuth,
-  requireCaseOfficer,
+  requireAuthorised,
+  requireRole,
   resolveBaseUrl,
   resolvePostLoginRedirect
 } from './session.js'
@@ -95,8 +96,8 @@ describe('#getAuthSession', () => {
     const session = getAuthSession(request)
     expect(session.name).toBe('Alex Grower')
     expect(session.isAuthenticated).toBe(true)
-    // Role stays neutral until authentication assigns one.
-    expect(session.role).toBe('')
+    // Roles default to an empty set until authentication assigns them.
+    expect(session.roles).toEqual([])
   })
 })
 
@@ -110,7 +111,6 @@ describe('#applyProfile', () => {
       subject: 'urn:staff',
       email: 'casey.officer@example.gov.uk',
       name: 'Casey Officer',
-      role: 'case_officer',
       roles: ['case_officer']
     }
 
@@ -122,25 +122,20 @@ describe('#applyProfile', () => {
 
     expect(session.isAuthenticated).toBe(true)
     expect(session.provider).toBe('microsoft-entra-id')
-    expect(session.role).toBe('case_officer')
-    expect(session.roleLabel).toBe('Case officer')
-    expect(session.scope).toContain('case_officer')
+    expect(session.roles).toEqual(['case_officer'])
     expect(session.pendingState).toBe('')
   })
 
-  test('an empty/unknown role is NOT granted applicant scope', async () => {
-    // e.g. an Entra user whose token lacks the case-officer claim → role ''.
+  test('a token with no roles yields an empty roles set (no access)', async () => {
     const request = { yar: fakeYar({ auth: buildAuthDefaults() }) }
 
     const session = await applyProfile(request, {
       provider: 'microsoft-entra-id',
-      profile: { subject: 'urn:staff', name: 'No Role', role: '', roles: [] },
+      profile: { subject: 'urn:staff', name: 'No Role', roles: [] },
       mode: 'mock'
     })
 
-    expect(session.role).toBe('')
-    expect(session.scope).not.toContain('applicant')
-    expect(session.scope).not.toContain('case_officer')
+    expect(session.roles).toEqual([])
   })
 })
 
@@ -176,32 +171,60 @@ describe('#requireAuth', () => {
   })
 })
 
-describe('#requireCaseOfficer', () => {
+describe('#requireRole', () => {
   test('redirects an unauthenticated user to the Entra sign-in', () => {
     const request = { yar: fakeYar(), url: { pathname: '/admin', search: '' } }
-    const result = requireCaseOfficer(request, fakeH())
+    const result = requireRole('case_officer')(request, fakeH())
     expect(result.url).toContain(PAGE_PATHS.ENTRA_SIGN_IN)
   })
 
-  test('404s an applicant trying to reach a case-officer page', () => {
+  test('404s a signed-in user whose roles do not include the required value', () => {
     const request = {
-      yar: fakeYar({
-        auth: { isAuthenticated: true, role: 'applicant' }
-      }),
+      yar: fakeYar({ auth: { isAuthenticated: true, roles: ['applicant'] } }),
       url: { pathname: '/admin', search: '' }
     }
-    const result = requireCaseOfficer(request, fakeH())
-    expect(result.statusCode).toBe(404)
+    expect(requireRole('case_officer')(request, fakeH()).statusCode).toBe(404)
   })
 
-  test('continues when the case officer role matches', () => {
+  test('continues when the token carries any of the allowed roles', () => {
+    const request = {
+      yar: fakeYar({ auth: { isAuthenticated: true, roles: ['reviewer'] } }),
+      url: { pathname: '/admin', search: '' }
+    }
+    expect(requireRole('case_officer', 'reviewer')(request, fakeH())).toBe(
+      CONTINUE
+    )
+  })
+
+  test('matches roles case-insensitively', () => {
     const request = {
       yar: fakeYar({
-        auth: { isAuthenticated: true, role: 'case_officer' }
+        auth: { isAuthenticated: true, roles: ['Case_Officer'] }
       }),
       url: { pathname: '/admin', search: '' }
     }
-    expect(requireCaseOfficer(request, fakeH())).toBe(CONTINUE)
+    expect(requireRole('case_officer')(request, fakeH())).toBe(CONTINUE)
+  })
+})
+
+describe('#requireAuthorised (matches the configured entra.roleValues)', () => {
+  // top-level beforeEach configures roleValues → default ['case_officer']
+  test('continues when the token carries a configured role value', () => {
+    const request = {
+      yar: fakeYar({
+        auth: { isAuthenticated: true, roles: ['case_officer'] }
+      }),
+      url: { pathname: '/admin', search: '' }
+    }
+    expect(requireAuthorised(request, fakeH())).toBe(CONTINUE)
+  })
+
+  test('404s when the token carries none of the configured role values', () => {
+    const request = {
+      yar: fakeYar({ auth: { isAuthenticated: true, roles: ['other'] } }),
+      url: { pathname: '/admin', search: '' }
+    }
+    expect(requireAuthorised(request, fakeH()).statusCode).toBe(404)
   })
 })
 

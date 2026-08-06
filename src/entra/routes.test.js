@@ -24,7 +24,7 @@ describe('entra routes (mock mode)', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.result).toContain('data-testid="entra-start"')
-    expect(res.result).toContain('Case officer sign in')
+    expect(res.result).toContain('Sign in')
   })
 
   test('GET /auth/entra/start redirects to the mock callback carrying state', async () => {

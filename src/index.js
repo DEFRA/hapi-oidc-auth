@@ -20,7 +20,7 @@ import { sharedAuthRoutes } from './shared-routes.js'
 export {
   requireAuth,
   requireRole,
-  requireCaseOfficer,
+  requireAuthorised,
   getAuthSession,
   isAuthenticated,
   PAGE_PATHS

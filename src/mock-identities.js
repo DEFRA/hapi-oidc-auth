@@ -1,16 +1,19 @@
+import { getConfig } from './config.js'
+
 // Mock sign-in identity for `mock` auth mode (no credentials needed).
 //
 // Mock mode lets a service run for demos and UCD / user research — a local
-// case-officer identity is used, so no real Entra credentials are required.
+// staff identity is used, so no real Entra credentials are required. The mock
+// identity carries the app's configured `roleValues` so the mock user satisfies
+// whatever role a consuming project guards on.
 export function buildMockEntraIdentity() {
   return {
-    subject: 'urn:entra:case-officer-demo',
-    email: 'case.officer@example.gov.uk',
-    firstName: 'Casey',
-    lastName: 'Officer',
-    name: 'Casey Officer',
-    roles: ['case_officer'],
-    role: 'case_officer',
-    sessionId: 'mock-session-entra-case-officer'
+    subject: 'urn:entra:staff-demo',
+    email: 'staff.user@example.gov.uk',
+    firstName: 'Sam',
+    lastName: 'Taylor',
+    name: 'Sam Taylor',
+    roles: getConfig().entra.roleValues || [],
+    sessionId: 'mock-session-entra-staff'
   }
 }

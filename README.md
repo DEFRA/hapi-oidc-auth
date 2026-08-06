@@ -97,10 +97,15 @@ cookieOptions: { isSecure, isSameSite: isSecure ? 'None' : 'Lax' }
 
 ## Guarding your own pages
 
+The plugin is **role-agnostic** — it gates on whatever role value(s) your tokens
+carry, so it works for any project ('case_officer', 'admission_officer',
+'funding_reviewer', …):
+
 ```js
 import {
   requireAuth, // any signed-in user
-  requireCaseOfficer, // role === case_officer
+  requireAuthorised, // signed in AND carries one of the configured `entra.roleValues`
+  requireRole, // requireRole('admission_officer', 'reviewer') — signed in AND one of these
   getAuthSession,
   buildAccount, // { name, roleLabel, accountUrl, signOutUrl } | null — for the header
   PAGE_PATHS
@@ -109,7 +114,9 @@ import {
 server.route({
   method: 'GET',
   path: '/admin/applications',
-  options: { pre: [{ method: requireCaseOfficer }] },
+  // requireAuthorised uses the roleValues you passed at register time; or use
+  // requireRole('...') to gate a page on a specific role.
+  options: { pre: [{ method: requireAuthorised }] },
   handler: (request, h) => h.view('admin', { session: getAuthSession(request) })
 })
 ```

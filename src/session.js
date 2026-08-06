@@ -1,13 +1,13 @@
 // Shared auth session orchestration (@hapi/yar) — IdP-agnostic.
 //
-// Both identity populations write into a single session object under one yar key;
-// it carries a `provider` field so the role guards, views and sign-out work
-// regardless of which IdP authenticated the user. Authorisation (role + scope) is
-// resolved downstream via get-permissions, NOT taken from the raw IdP token.
+// The authenticated identity is written into a single session object under one
+// yar key; it carries a `provider` field plus the token's `roles`, so the
+// guards, views and sign-out work regardless of which IdP authenticated the
+// user. The plugin is role-agnostic: the guards decide access by matching the
+// token roles against the values a consuming app configures/guards on.
 
 import { statusCodes } from './status-codes.js'
 import { getConfig } from './config.js'
-import { getPermissions } from './get-permissions.js'
 
 export const AUTH_SESSION_KEY = 'auth'
 
@@ -32,11 +32,10 @@ export function buildAuthDefaults() {
     name: '',
     organisationId: '',
     organisations: [],
+    // The role values carried by the token (from the IdP `roles` claim). The
+    // plugin is role-agnostic: authorisation is decided by matching these against
+    // the values a consuming app configures/guards on.
     roles: [],
-    // Neutral until authentication assigns a role — no role is implied up front.
-    role: '',
-    roleLabel: '',
-    scope: [],
     claims: {},
     authenticatedAt: '',
     // Transient values held only between sign-in start and callback.
@@ -120,13 +119,12 @@ export function resolvePostLoginRedirect(returnTo) {
   return target || redirects.postLogin
 }
 
-// Apply an authenticated profile to the session. Role + scope come from the
-// downstream (mock) permissions service, not the IdP token.
+// Apply an authenticated profile to the session. The token's `roles` are stored
+// as-is; the guards decide access from them (the plugin is role-agnostic).
 export async function applyProfile(
   request,
   { provider, profile, tokens = {}, mode }
 ) {
-  const { role: roleLabel, scope } = await getPermissions(profile)
   const session = getAuthSession(request)
 
   // Normalise optional fields once so a partial profile/token can't leave gaps.
@@ -157,9 +155,6 @@ export async function applyProfile(
     organisationId: p.organisationId,
     organisations: p.organisations,
     roles: p.roles,
-    role: p.role,
-    roleLabel,
-    scope,
     claims: p.claims,
     token: t.token,
     refreshToken: t.refreshToken,
@@ -177,16 +172,11 @@ export async function applyProfile(
 }
 
 // --- Route guards (Hapi `pre` handlers) ------------------------------------
-// They stash the attempted URL as returnTo and send the visitor to sign in.
-// This plugin has a single population (case officers via Entra), so both guards
-// send an unauthenticated visitor straight to the Entra sign-in.
+// The plugin is role-agnostic. An unauthenticated visitor is sent to the Entra
+// sign-in; an authenticated visitor without a matching role gets a 404.
 
-export function requireAuth(request, h) {
+function redirectToSignIn(request, h) {
   const session = getAuthSession(request)
-  if (session.isAuthenticated) {
-    return h.continue
-  }
-
   const returnTo = request.url.pathname + (request.url.search || '')
   setAuthSession(request, { ...session, returnTo })
   return h
@@ -194,27 +184,45 @@ export function requireAuth(request, h) {
     .takeover()
 }
 
-export function requireRole(requiredRole) {
+// Case-insensitive membership test between the session's roles and a set of
+// allowed values.
+function hasAnyRole(session, allowedValues) {
+  const allowed = allowedValues.map((value) => String(value).toLowerCase())
+  return (session.roles || []).some((role) =>
+    allowed.includes(String(role).toLowerCase())
+  )
+}
+
+// requireAuth — any signed-in user.
+export function requireAuth(request, h) {
+  if (getAuthSession(request).isAuthenticated) {
+    return h.continue
+  }
+  return redirectToSignIn(request, h)
+}
+
+// requireRole(...values) — signed in AND the token carries one of `values`.
+// Values can be passed as separate args or a single array.
+export function requireRole(...values) {
+  const allowedValues = values.flat()
   return (request, h) => {
     const session = getAuthSession(request)
-
     if (!session.isAuthenticated) {
-      const returnTo = request.url.pathname + (request.url.search || '')
-      setAuthSession(request, { ...session, returnTo })
-      return h
-        .redirect(`${PAGE_PATHS.ENTRA_SIGN_IN}?error=auth-required`)
-        .takeover()
+      return redirectToSignIn(request, h)
     }
-
-    if (session.role !== requiredRole) {
+    if (!hasAnyRole(session, allowedValues)) {
       return h
-        .response('Case officer access is required for this page')
+        .response('You do not have permission to access this page')
         .code(statusCodes.notFound)
         .takeover()
     }
-
     return h.continue
   }
 }
 
-export const requireCaseOfficer = requireRole('case_officer')
+// requireAuthorised — signed in AND the token carries one of the role values the
+// app configured via `entra.roleValues` (the common "protect this page for my
+// app's role(s)" case, without repeating the values at every guard).
+export function requireAuthorised(request, h) {
+  return requireRole(getConfig().entra.roleValues || [])(request, h)
+}

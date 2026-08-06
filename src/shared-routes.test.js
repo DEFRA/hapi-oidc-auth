@@ -46,7 +46,7 @@ describe('shared auth routes (mock mode)', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.result).toContain('data-testid="account-summary"')
-    expect(res.result).toContain('Casey Officer')
+    expect(res.result).toContain('Sam Taylor')
   })
 
   test('GET /auth/sign-out clears the session and redirects home (mock)', async () => {

@@ -20,14 +20,15 @@ export const DEFAULT_CONTENT = {
     mockSuffix: ' — a local demo identity is used; no credentials needed.'
   },
 
+  // Generic staff sign-in copy. A consuming app overrides this section to
+  // reference its own service / role (e.g. "Case officer sign in").
   entraSignIn: {
-    pageTitle: 'Staff sign in',
-    heading: 'Case officer sign in',
+    pageTitle: 'Sign in',
+    heading: 'Sign in',
     caption: ENTRA_PROVIDER_NAME,
-    intro:
-      'Staff sign in with their Defra account to review and decide applications.',
+    intro: 'Sign in with your organisation account.',
     liveEnabled:
-      'Live mode is enabled — you will sign in with your real Defra staff account.',
+      'Live mode is enabled — you will sign in with your real organisation account.',
     notConfiguredPrefix: NOT_CONFIGURED_PREFIX,
     notConfiguredSuffix: '). Set the entra.* options.',
     signInButton: SIGN_IN_BUTTON
@@ -41,10 +42,6 @@ export const DEFAULT_CONTENT = {
     keyRole: 'Role',
     keyProvider: 'Identity provider',
     keyMode: 'Mode',
-    organisationsHeading: 'Organisations',
-    noOrganisations: 'No organisations (internal staff account).',
-    currentTag: 'Current',
-    permissionsHeading: 'Permissions (resolved downstream)',
     signOutButton: 'Sign out'
   }
 }

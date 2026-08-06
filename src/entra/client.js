@@ -52,8 +52,7 @@ export function getEntraIdConfig() {
     postLogoutRedirectUri: raw.signOutRedirectUrl,
     scopes: ['openid', 'profile', 'offline_access'],
     usePkce: true,
-    prompt: '',
-    roleValues: raw.roleValues
+    prompt: ''
   }
 }
 
@@ -168,7 +167,7 @@ export async function startLiveEntra(baseUrl, options = {}) {
 }
 
 // Map standard Entra ID v2.0 claims to the staff profile shape.
-export function mapEntraClaimsToProfile(claims, entraConfig) {
+export function mapEntraClaimsToProfile(claims) {
   const subject = firstNonEmpty(claims.oid, claims.sub)
   if (!subject) {
     throw createHttpError(
@@ -179,15 +178,6 @@ export function mapEntraClaimsToProfile(claims, entraConfig) {
 
   const firstName = String(claims.given_name || '')
   const lastName = String(claims.family_name || '')
-  const roles = toStringArray(claims.roles)
-  // The app-role value(s) that grant case-officer access are configurable per
-  // project (default ['case_officer']); match the token's `roles` against them.
-  const roleValues = (entraConfig.roleValues || ['case_officer']).map((value) =>
-    String(value).toLowerCase()
-  )
-  const hasCaseOfficerRole = roles.some((value) =>
-    roleValues.includes(value.toLowerCase())
-  )
 
   return {
     subject,
@@ -195,12 +185,10 @@ export function mapEntraClaimsToProfile(claims, entraConfig) {
     firstName,
     lastName,
     name: buildDisplayName(firstName, lastName, claims.name),
-    roles,
-    // Only grant the case-officer role when the token actually carries one of the
-    // configured role values. Assigning it unconditionally would let any
-    // authenticated Entra user past the case-officer guard.
-    role: hasCaseOfficerRole ? 'case_officer' : '',
-    hasCaseOfficerRole,
+    // The role values the token carries (app-role `roles` claim). The plugin is
+    // role-agnostic: authorisation is decided by the guards matching these
+    // against the values a consuming app configures/guards on.
+    roles: toStringArray(claims.roles),
     sessionId: String(claims.sid || ''),
     claims
   }
@@ -252,7 +240,7 @@ export async function completeLiveEntra(callback, sessionState) {
     nonce: sessionState.nonce
   })
 
-  const profile = mapEntraClaimsToProfile(claims, entraConfig)
+  const profile = mapEntraClaimsToProfile(claims)
 
   return {
     profile,

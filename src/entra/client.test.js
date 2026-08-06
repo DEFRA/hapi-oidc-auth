@@ -124,43 +124,38 @@ describe('#startLiveEntra', () => {
 })
 
 describe('#mapEntraClaimsToProfile', () => {
-  const entraConfig = { roleValues: ['case_officer'] }
-
-  test('maps oid/preferred_username and flags the case-officer role', () => {
-    const profile = mapEntraClaimsToProfile(
-      {
-        oid: 'oid-1',
-        preferred_username: 'co@defra.gov.uk',
-        given_name: 'Casey',
-        family_name: 'Officer',
-        roles: ['case_officer'],
-        sid: 's1'
-      },
-      entraConfig
-    )
+  test('maps oid/preferred_username and carries the token roles', () => {
+    const profile = mapEntraClaimsToProfile({
+      oid: 'oid-1',
+      preferred_username: 'co@defra.gov.uk',
+      given_name: 'Casey',
+      family_name: 'Officer',
+      roles: ['case_officer'],
+      sid: 's1'
+    })
 
     expect(profile.subject).toBe('oid-1')
     expect(profile.email).toBe('co@defra.gov.uk')
-    expect(profile.role).toBe('case_officer')
-    expect(profile.hasCaseOfficerRole).toBe(true)
+    expect(profile.roles).toEqual(['case_officer'])
     expect(profile.sessionId).toBe('s1')
   })
 
-  test('does not flag or assign the case-officer role when absent', () => {
-    const profile = mapEntraClaimsToProfile(
-      { sub: 's', roles: ['other'] },
-      entraConfig
-    )
-    expect(profile.hasCaseOfficerRole).toBe(false)
-    // Role must NOT be assigned without the claim, or the user would pass the
-    // case-officer guard on /admin/*.
-    expect(profile.role).toBe('')
+  test('carries whatever role values the token contains (role-agnostic)', () => {
+    // The plugin does not judge the roles here — the guards decide access.
+    const profile = mapEntraClaimsToProfile({
+      sub: 's',
+      roles: ['admission_officer', 'reviewer']
+    })
+    expect(profile.roles).toEqual(['admission_officer', 'reviewer'])
+  })
+
+  test('has an empty roles array when the token carries no roles claim', () => {
+    const profile = mapEntraClaimsToProfile({ sub: 's' })
+    expect(profile.roles).toEqual([])
   })
 
   test('throws 422 when the subject claim is missing', () => {
-    expect(() => mapEntraClaimsToProfile({}, entraConfig)).toThrow(
-      /subject claim/
-    )
+    expect(() => mapEntraClaimsToProfile({})).toThrow(/subject claim/)
   })
 })
 
@@ -198,7 +193,7 @@ describe('#completeLiveEntra', () => {
     )
 
     expect(result.profile.subject).toBe('oid-1')
-    expect(result.profile.role).toBe('case_officer')
+    expect(result.profile.roles).toEqual(['case_officer'])
     expect(result.returnTo).toBe('/admin/applications')
   })
 
@@ -326,33 +321,19 @@ describe('#completeLiveEntra (errors)', () => {
 
 describe('#mapEntraClaimsToProfile (single-value roles)', () => {
   test('coerces a string roles claim into an array', () => {
-    const profile = mapEntraClaimsToProfile(
-      { oid: 'oid-1', roles: 'case_officer' },
-      { roleValues: ['case_officer'] }
-    )
+    const profile = mapEntraClaimsToProfile({
+      oid: 'oid-1',
+      roles: 'case_officer'
+    })
     expect(profile.roles).toEqual(['case_officer'])
-    expect(profile.hasCaseOfficerRole).toBe(true)
-  })
-})
-
-describe('#mapEntraClaimsToProfile (configurable role values)', () => {
-  test('grants case-officer access for a project-specific role value', () => {
-    // A project that names its Entra app role "ocr_officer" rather than "case_officer".
-    const profile = mapEntraClaimsToProfile(
-      { oid: 'oid-2', roles: ['ocr_officer'] },
-      { roleValues: ['ocr_officer'] }
-    )
-    expect(profile.hasCaseOfficerRole).toBe(true)
-    expect(profile.role).toBe('case_officer')
   })
 
-  test('does not grant access when the token role is not in roleValues', () => {
-    const profile = mapEntraClaimsToProfile(
-      { oid: 'oid-3', roles: ['case_officer'] },
-      { roleValues: ['ocr_officer'] }
-    )
-    expect(profile.hasCaseOfficerRole).toBe(false)
-    expect(profile.role).toBe('')
+  test('carries a project-specific single role value through', () => {
+    const profile = mapEntraClaimsToProfile({
+      oid: 'oid-2',
+      roles: 'ocr_officer'
+    })
+    expect(profile.roles).toEqual(['ocr_officer'])
   })
 })
 

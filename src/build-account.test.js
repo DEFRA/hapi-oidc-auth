@@ -14,32 +14,31 @@ describe('#buildAccount', () => {
     expect(buildAccount(fakeRequest({ isAuthenticated: false }))).toBeNull()
   })
 
-  test('returns the name, role label and auth links when signed in', () => {
+  test('returns the name, roles and auth links when signed in', () => {
     const account = buildAccount(
       fakeRequest({
         isAuthenticated: true,
-        name: 'Alex Applicant',
-        role: 'applicant',
-        roleLabel: 'Farmer'
+        name: 'Sam Taylor',
+        roles: ['admission_officer']
       })
     )
 
     expect(account).toEqual({
-      name: 'Alex Applicant',
-      roleLabel: 'Farmer',
+      name: 'Sam Taylor',
+      roleLabel: 'admission_officer',
       accountUrl: '/auth/account',
       signOutUrl: '/auth/sign-out'
     })
   })
 
-  test('falls back to the raw role when there is no role label', () => {
+  test('joins multiple roles for the header label', () => {
     const account = buildAccount(
       fakeRequest({
         isAuthenticated: true,
-        name: 'Casey',
-        role: 'case_officer'
+        name: 'Sam Taylor',
+        roles: ['case_officer', 'reviewer']
       })
     )
-    expect(account.roleLabel).toBe('case_officer')
+    expect(account.roleLabel).toBe('case_officer, reviewer')
   })
 })
