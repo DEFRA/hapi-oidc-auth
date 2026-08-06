@@ -187,9 +187,11 @@ function redirectToSignIn(request, h) {
 // Case-insensitive membership test between the session's roles and a set of
 // allowed values.
 function hasAnyRole(session, allowedValues) {
-  const allowed = allowedValues.map((value) => String(value).toLowerCase())
+  const allowed = new Set(
+    allowedValues.map((value) => String(value).toLowerCase())
+  )
   return (session.roles || []).some((role) =>
-    allowed.includes(String(role).toLowerCase())
+    allowed.has(String(role).toLowerCase())
   )
 }
 
