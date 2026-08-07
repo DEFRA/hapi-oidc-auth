@@ -35,7 +35,7 @@ export const PLUGIN_NAME = 'hapi-oidc-auth'
 // the host can wire it in (see README → Views).
 export const viewsPath = path.dirname(fileURLToPath(import.meta.url))
 
-const VALID_MODES = ['mock', 'live']
+const VALID_MODES = new Set(['mock', 'live'])
 
 // Validate the register options up front so misconfiguration fails fast with a
 // clear message rather than a confusing runtime error mid sign-in.
@@ -51,7 +51,7 @@ function assertOptions(options) {
   // misnamed env var would be silently treated as mock (see resolveEntra's
   // `?? 'mock'`), i.e. a live deployment would hand out a mock identity with no
   // credentials. `mode` may be omitted (→ mock), but if set it must be exact.
-  if (entra.mode !== undefined && !VALID_MODES.includes(entra.mode)) {
+  if (entra.mode !== undefined && !VALID_MODES.has(entra.mode)) {
     throw new Error(
       `${PLUGIN_NAME}: entra.mode must be "mock" or "live" ` +
         `(got ${JSON.stringify(entra.mode)}).`
