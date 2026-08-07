@@ -208,7 +208,14 @@ describe('#requireRole', () => {
 })
 
 describe('#requireAuthorised (matches the configured entra.roleValues)', () => {
-  // top-level beforeEach configures roleValues → default ['case_officer']
+  // There is no default role value, so configure one for these tests.
+  beforeEach(() => {
+    setConfig({
+      entra: { mode: 'mock', roleValues: ['case_officer'] },
+      redirects: { postLogin: '/dashboard' }
+    })
+  })
+
   test('continues when the token carries a configured role value', () => {
     const request = {
       yar: fakeYar({

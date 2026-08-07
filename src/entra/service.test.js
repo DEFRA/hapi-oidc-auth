@@ -66,6 +66,7 @@ function setLiveConfig() {
       tenantId: 'tid',
       clientId: 'entra-client',
       clientSecret: 'entra-secret',
+      publicBaseUrl: 'https://app.example',
       signOutRedirectUrl: 'https://app.example/bye'
     }
   })
@@ -73,7 +74,7 @@ function setLiveConfig() {
 
 beforeEach(() => {
   setConfig({
-    entra: { mode: 'mock' },
+    entra: { mode: 'mock', roleValues: ['case_officer'] },
     redirects: { postLogin: '/admin/applications' }
   })
 })

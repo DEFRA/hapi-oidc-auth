@@ -58,6 +58,7 @@ function setLiveConfig(overrides = {}) {
       tenantId: 'tid',
       clientId: 'entra-client',
       clientSecret: 'entra-secret',
+      publicBaseUrl: 'https://app.example',
       signOutRedirectUrl: 'https://app.example/bye',
       roleValues: ['case_officer'],
       ...overrides

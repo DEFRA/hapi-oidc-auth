@@ -1,6 +1,6 @@
-// Microsoft Entra ID sign-in routes — INTERNAL case officers / staff.
+// Microsoft Entra ID sign-in routes.
 //
-//   GET /auth/entra/sign-in    render the staff sign-in page
+//   GET /auth/entra/sign-in    render the sign-in page
 //   GET /auth/entra/start      begin sign-in, redirect to Entra (or mock callback)
 //   GET|POST /auth/entra/callback complete sign-in, redirect to the post-login page
 

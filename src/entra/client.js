@@ -1,4 +1,4 @@
-// Microsoft Entra ID OIDC client — INTERNAL case officers / staff.
+// Microsoft Entra ID OIDC client.
 //
 // Framework-agnostic: node:crypto + fetch only (shared plumbing in
 // ../oidc-common.js). The Hapi layer passes an explicit `baseUrl` string.
@@ -84,6 +84,12 @@ function getMissingLiveConfig(entraConfig) {
   }
   if (!entraConfig.clientSecret) {
     missing.push('clientSecret')
+  }
+  // Required in live mode: the redirect URI must match what's registered with
+  // Entra. Without it, resolveBaseUrl would silently fall back to the request
+  // Host header (spoofable, and wrong behind a proxy), so fail loudly instead.
+  if (!entraConfig.publicBaseUrl) {
+    missing.push('publicBaseUrl')
   }
   return missing
 }

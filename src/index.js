@@ -1,8 +1,8 @@
-// @defra/hapi-oidc-auth — reusable Hapi plugin for DEFRA case-officer sign-in.
+// @defra/hapi-oidc-auth — reusable Hapi plugin for Microsoft Entra ID sign-in.
 //
-// Case officers (internal) sign in via Microsoft Entra ID (OIDC auth-code +
-// PKCE). The applicant (Defra Customer Identity) journey lives in a separate
-// package, hapi-oidc-auth-defra-id.
+// Users sign in via Microsoft Entra ID (OIDC auth-code + PKCE). The applicant
+// (Defra Customer Identity) journey lives in a separate package,
+// hapi-oidc-auth-defra-id.
 //
 // The consuming app registers this plugin and passes its config as options;
 // per-environment values + secrets come from the host (cdp-app-config + CDP
@@ -60,9 +60,9 @@ export const hapiOidcAuth = {
       server.expose('options', resolved)
       server.expose('viewsPath', viewsPath)
 
-      // The case-officer (Entra) journey plus the shared account / sign-out
-      // routes. Their routes render the plugin's own views, which the host
-      // resolves via `viewsPath` (see README).
+      // The Entra sign-in journey plus the shared account / sign-out routes.
+      // Their routes render the plugin's own views, which the host resolves via
+      // `viewsPath` (see README).
       await server.register([entraRoutes, sharedAuthRoutes])
     }
   }

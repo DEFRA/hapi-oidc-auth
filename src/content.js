@@ -20,8 +20,8 @@ export const DEFAULT_CONTENT = {
     mockSuffix: ' — a local demo identity is used; no credentials needed.'
   },
 
-  // Generic staff sign-in copy. A consuming app overrides this section to
-  // reference its own service / role (e.g. "Case officer sign in").
+  // Generic sign-in copy. A consuming app overrides this section to reference
+  // its own service name.
   entraSignIn: {
     pageTitle: 'Sign in',
     heading: 'Sign in',

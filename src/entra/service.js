@@ -1,8 +1,7 @@
-// Microsoft Entra ID sign-in orchestration — INTERNAL case officers / staff.
+// Microsoft Entra ID sign-in orchestration.
 //
-// Mirrors the Defra Identity service but for the staff IdP (OIDC auth-code + PKCE).
-// Dispatches mock vs live over the framework-agnostic ./client.js. Staff have no
-// external-organisation context.
+// Dispatches mock vs live over the framework-agnostic ./client.js (OIDC
+// auth-code + PKCE).
 
 import { getConfig } from '../config.js'
 
@@ -43,7 +42,6 @@ export async function startEntraSignIn(request, options = {}) {
     session.pendingNonce = `mock-entra-nonce-${Date.now()}`
     session.pkceVerifier = ''
     session.pendingRedirectUri = ''
-    session.pendingIdentity = 'case_officer'
     session.mode = 'mock'
     setAuthSession(request, session)
 
@@ -62,7 +60,6 @@ export async function startEntraSignIn(request, options = {}) {
   session.pendingNonce = start.nonce
   session.pkceVerifier = start.pkceVerifier
   session.pendingRedirectUri = start.redirectUri
-  session.pendingIdentity = 'case_officer'
   session.mode = 'live'
   setAuthSession(request, session)
 

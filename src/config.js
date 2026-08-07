@@ -13,10 +13,11 @@ const DEFAULT_REDIRECTS = {
   signOut: '/'
 }
 
-// The Entra app-role value(s) that grant case-officer access default to
-// 'case_officer', but each consuming project can name its own Entra role — pass
-// `roleValues` to match whatever value(s) that project's tokens carry.
-const DEFAULT_ROLE_VALUES = ['case_officer']
+// The Entra app-role value(s) that grant access. There is no default — each
+// consuming project must declare the role value(s) its tokens carry via
+// `roleValues` (a string or an array). With none configured, `requireAuthorised`
+// matches nothing and denies everyone (fail closed).
+const DEFAULT_ROLE_VALUES = []
 
 let resolved = null
 

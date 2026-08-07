@@ -43,7 +43,6 @@ export function buildAuthDefaults() {
     pendingNonce: '',
     pkceVerifier: '',
     pendingRedirectUri: '',
-    pendingIdentity: '',
     token: '',
     refreshToken: '',
     idTokenHint: '',
@@ -164,8 +163,7 @@ export async function applyProfile(
     pendingState: '',
     pendingNonce: '',
     pkceVerifier: '',
-    pendingRedirectUri: '',
-    pendingIdentity: ''
+    pendingRedirectUri: ''
   }
 
   return setAuthSession(request, updated)

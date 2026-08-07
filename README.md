@@ -1,16 +1,17 @@
 # @defra/hapi-oidc-auth
 
-Reusable [Hapi](https://hapi.dev) plugin that adds **DEFRA case-officer sign-in
-via Microsoft Entra ID** (OpenID Connect auth-code + PKCE) to any CDP frontend.
+Reusable [Hapi](https://hapi.dev) plugin that adds **sign-in via Microsoft
+Entra ID** (OpenID Connect auth-code + PKCE) to any CDP frontend.
 
 The plugin provides the OIDC Relying Party plumbing (redirect, `form_post`
 callback, JWKS token verification, state/nonce, session, role guards), a
 **mock mode** for local/demo, its own sign-in view, and the signed-in header
-account block — so a consuming app adds case-officer login by registering the
-plugin and passing its config.
+account block — so a consuming app adds Entra ID login by registering the
+plugin and passing its config. It is **role-agnostic**: each app declares the
+role value(s) its tokens carry, so it works for any staff service.
 
 > The **applicant** (Defra Customer Identity) journey lives in a separate
-> package, `hapi-oidc-auth-defra-id`. This package is case-officer only.
+> package, `hapi-oidc-auth-defra-id`. This package is Entra ID only.
 
 ## Install
 
@@ -34,8 +35,9 @@ await server.register({
       publicBaseUrl: process.env.ENTRA_PUBLIC_BASE_URL,
       redirectPath: '/auth/entra/callback',
       signOutRedirectUrl: '/',
-      // Entra app-role value(s) that grant case-officer access. Each project can
-      // name its own Entra app role — pass whatever value(s) its tokens carry.
+      // Required: the Entra app-role value(s) that grant access. There is no
+      // default — declare whatever value(s) your app's tokens carry (name the
+      // App role whatever suits your service).
       roleValues: ['case_officer']
     },
 
@@ -48,10 +50,11 @@ await server.register({
 })
 ```
 
-Case-officer access is granted only when the Entra ID token's `roles` claim
-carries one of the configured `roleValues` — define that App role on the Entra
-app registration and assign it to the relevant group/users. `roleValues` also
-accepts a single string (`roleValues: 'ocr_officer'`).
+Access is granted only when the Entra ID token's `roles` claim carries one of
+the configured `roleValues` — define that App role on the Entra app registration
+and assign it to the relevant group/users. `roleValues` also accepts a single
+string (`roleValues: 'ocr_officer'`). If you configure none, `requireAuthorised`
+denies everyone (fail closed).
 
 ## What the host app must provide
 

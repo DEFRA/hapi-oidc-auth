@@ -6,11 +6,12 @@ describe('#config', () => {
     expect(() => getConfig()).toThrow(/config not initialised/)
   })
 
-  test('setConfig applies entra defaults (mock mode, callback path, role values)', () => {
+  test('setConfig applies entra defaults (mock mode, callback path, empty role values)', () => {
     const cfg = setConfig({ entra: {} })
     expect(cfg.entra.mode).toBe('mock')
     expect(cfg.entra.redirectPath).toBe('/auth/entra/callback')
-    expect(cfg.entra.roleValues).toEqual(['case_officer'])
+    // No default: consumers must declare their own role value(s).
+    expect(cfg.entra.roleValues).toEqual([])
   })
 
   test('setConfig applies default redirects and merges overrides', () => {
