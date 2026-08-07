@@ -53,3 +53,36 @@ describe('entra routes (mock mode)', () => {
     expect(callback.headers.location).toBe('/admin/applications')
   })
 })
+
+describe('entra routes (live mode)', () => {
+  let server
+
+  beforeAll(async () => {
+    server = await buildTestServer({
+      entra: {
+        mode: 'live',
+        tenantId: 'tid',
+        clientId: 'entra-client',
+        clientSecret: 'entra-secret',
+        publicBaseUrl: 'https://app.example'
+      },
+      redirects: { postLogin: '/admin/applications' }
+    })
+  })
+
+  afterAll(async () => {
+    await server.stop()
+  })
+
+  // Proves the thrown .statusCode survives to the HTTP response via the host's
+  // onPreResponse boundary — i.e. a bad callback is 422, not a boomified 500.
+  test('a live callback with a bad state returns 422 (not 500) end-to-end', async () => {
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/entra/callback',
+      payload: { code: 'some-code', state: 'does-not-match-session' }
+    })
+
+    expect(res.statusCode).toBe(422)
+  })
+})

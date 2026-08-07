@@ -138,7 +138,8 @@ describe('#mapEntraClaimsToProfile', () => {
     expect(profile.subject).toBe('oid-1')
     expect(profile.email).toBe('co@defra.gov.uk')
     expect(profile.roles).toEqual(['case_officer'])
-    expect(profile.sessionId).toBe('s1')
+    // `sid` is not lifted to a top-level field; it remains on the raw claims.
+    expect(profile.claims.sid).toBe('s1')
   })
 
   test('carries whatever role values the token contains (role-agnostic)', () => {

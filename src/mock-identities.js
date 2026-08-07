@@ -13,7 +13,6 @@ export function buildMockEntraIdentity() {
     firstName: 'Sam',
     lastName: 'Taylor',
     name: 'Sam Taylor',
-    roles: getConfig().entra.roleValues || [],
-    sessionId: 'mock-session-entra-staff'
+    roles: getConfig().entra.roleValues || []
   }
 }

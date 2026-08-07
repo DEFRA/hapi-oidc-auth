@@ -195,7 +195,9 @@ export function mapEntraClaimsToProfile(claims) {
     // role-agnostic: authorisation is decided by the guards matching these
     // against the values a consuming app configures/guards on.
     roles: toStringArray(claims.roles),
-    sessionId: String(claims.sid || ''),
+    // Note: the full verified claim set is carried through as `claims`, so
+    // `sid` (for any future back-channel logout) remains available there — we
+    // don't lift it to a top-level field that applyProfile would just drop.
     claims
   }
 }

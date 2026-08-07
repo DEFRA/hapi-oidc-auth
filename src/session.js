@@ -87,6 +87,15 @@ export function resolveBaseUrl(request, configuredBaseUrl) {
     return configuredBaseUrl
   }
 
+  // In live mode the base URL MUST be the explicitly configured publicBaseUrl —
+  // never derived from the request Host header, which is attacker-controllable
+  // (Host / X-Forwarded-Host) and wrong behind a proxy. startLiveEntra already
+  // requires publicBaseUrl; returning '' here closes the same hole on every
+  // other path (callback, sign-out) rather than silently trusting the host.
+  if (getConfig().entra.mode === 'live') {
+    return ''
+  }
+
   const protocol =
     request?.url?.protocol?.replace(':', '') ||
     request?.server?.info?.protocol ||

@@ -22,10 +22,35 @@ describe('#hapiOidcAuth', () => {
     await server.stop()
   })
 
+  test('does not expose the clientSecret on server.plugins', async () => {
+    const server = Hapi.server()
+    await server.register({
+      plugin: hapiOidcAuth,
+      options: {
+        entra: { mode: 'live', clientSecret: 'super-secret', tenantId: 't' }
+      }
+    })
+
+    const exposed = server.plugins[PLUGIN_NAME].options
+    expect(exposed.entra.clientSecret).toBeUndefined()
+
+    await server.stop()
+  })
+
   test('throws a clear error when the entra option is missing', async () => {
     const server = Hapi.server()
     await expect(
       server.register({ plugin: hapiOidcAuth, options: {} })
     ).rejects.toThrow(/the `entra` option is required/)
+  })
+
+  test('fails closed on an unrecognised entra.mode (no silent downgrade to mock)', async () => {
+    const server = Hapi.server()
+    await expect(
+      server.register({
+        plugin: hapiOidcAuth,
+        options: { entra: { mode: 'Live' } }
+      })
+    ).rejects.toThrow(/entra\.mode must be "mock" or "live"/)
   })
 })

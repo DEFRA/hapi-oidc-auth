@@ -271,4 +271,14 @@ describe('#resolveBaseUrl', () => {
   test('returns empty string when no host is available', () => {
     expect(resolveBaseUrl({}, '')).toBe('')
   })
+
+  test('in live mode never falls back to the request host (anti-spoofing)', () => {
+    setConfig({ entra: { mode: 'live' }, redirects: { postLogin: '/' } })
+    const request = {
+      url: { protocol: 'https:' },
+      info: { host: 'attacker.example' }
+    }
+    // Even though a Host header is present, live mode must not derive from it.
+    expect(resolveBaseUrl(request, '')).toBe('')
+  })
 })
