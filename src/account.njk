@@ -1,0 +1,36 @@
+{% extends 'layouts/page.njk' %}
+
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  {{ appHeading({
+    text: heading,
+    caption: session.name
+  }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {{ govukSummaryList({
+        rows: [
+          { key: { text: t.keyName }, value: { text: session.name } },
+          { key: { text: t.keyEmail }, value: { text: session.email } },
+          { key: { text: t.keyRole }, value: { text: session.roles | join(", ") } },
+          { key: { text: t.keyProvider }, value: { text: session.provider } },
+          { key: { text: t.keyMode }, value: { text: session.mode } }
+        ],
+        attributes: { "data-testid": "account-summary" }
+      }) }}
+
+      {{ govukButton({
+        text: t.signOutButton,
+        href: "/auth/sign-out",
+        classes: "govuk-button--secondary",
+        attributes: { "data-testid": "account-sign-out" }
+      }) }}
+
+    </div>
+  </div>
+
+{% endblock %}
