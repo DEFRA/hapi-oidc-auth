@@ -49,7 +49,19 @@ describe('shared auth routes (mock mode)', () => {
     expect(res.result).toContain('Sam Taylor')
   })
 
-  test('GET /auth/sign-out clears the session and redirects home (mock)', async () => {
+  test('POST /auth/sign-out clears the session and redirects home (mock)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie }
+    })
+
+    expect(res.statusCode).toBe(302)
+    expect(res.headers.location).toBe('/')
+  })
+
+  test('GET /auth/sign-out is not allowed (CSRF: sign-out is POST-only)', async () => {
     const cookie = await signInCaseOfficer(server)
     const res = await server.inject({
       method: 'GET',
@@ -57,7 +69,7 @@ describe('shared auth routes (mock mode)', () => {
       headers: { cookie }
     })
 
-    expect(res.statusCode).toBe(302)
-    expect(res.headers.location).toBe('/')
+    // A cross-site GET (link/image) must not be able to trigger sign-out.
+    expect(res.statusCode).toBe(404)
   })
 })
