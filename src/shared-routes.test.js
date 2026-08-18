@@ -100,7 +100,7 @@ describe('shared auth routes (mock mode)', () => {
     expect(res.headers.location).toBe('/')
   })
 
-  test('POST /auth/sign-out from a same-site (subdomain) form signs out', async () => {
+  test('POST /auth/sign-out from a same-site (subdomain) form is rejected (CSRF)', async () => {
     const cookie = await signInCaseOfficer(server)
     const res = await server.inject({
       method: 'POST',
@@ -108,9 +108,9 @@ describe('shared auth routes (mock mode)', () => {
       headers: { cookie, 'sec-fetch-site': 'same-site' }
     })
 
-    // same-site is trusted: the SameSite=None cookie is scoped to the host's own
-    // cookie Domain, so a sibling subdomain is not treated as a cross-site attacker.
-    expect(res.statusCode).toBe(302)
-    expect(res.headers.location).toBe('/')
+    // A compromised sibling subdomain can auto-submit a form with same-site and
+    // the browser still attaches cookies for the destination host, so same-site
+    // must be rejected the same as cross-site.
+    expect(res.statusCode).toBe(403)
   })
 })

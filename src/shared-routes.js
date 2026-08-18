@@ -19,13 +19,16 @@ import { statusCodes } from './status-codes.js'
 import { PAGE_PATHS, getAuthSession, requireAuth } from './session.js'
 
 // Sec-Fetch-Site is set by the browser and cannot be forged by a page: a
-// same-origin form submit sends `same-origin`, an attacker's cross-site form
-// sends `cross-site`. `same-site` (a sibling subdomain) is trusted — the
-// SameSite=None cookie is already scoped to the host's cookie Domain. When the
-// header is absent (clients without Fetch Metadata) we allow the request: the
-// only risk is a forced logout, and blocking would break sign-out for them.
+// same-origin form submit sends `same-origin`, while `cross-site` and
+// `same-site` (sibling subdomains) are rejected. A compromised sibling
+// subdomain can auto-submit a form with `Sec-Fetch-Site: same-site` and the
+// browser will still attach cookies for the destination host, so trusting
+// same-site leaves logout CSRF possible. When the header is absent (clients
+// without Fetch Metadata) we allow the request: the only risk is a forced
+// logout, and blocking would break sign-out for them.
 function isCrossSiteRequest(request) {
-  return request.headers['sec-fetch-site'] === 'cross-site'
+  const fetchSite = request.headers['sec-fetch-site']
+  return fetchSite === 'cross-site' || fetchSite === 'same-site'
 }
 
 const signOut = {
