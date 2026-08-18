@@ -49,12 +49,12 @@ describe('shared auth routes (mock mode)', () => {
     expect(res.result).toContain('Sam Taylor')
   })
 
-  test('POST /auth/sign-out clears the session and redirects home (mock)', async () => {
+  test('POST /auth/sign-out (same-origin) clears the session and redirects home (mock)', async () => {
     const cookie = await signInCaseOfficer(server)
     const res = await server.inject({
       method: 'POST',
       url: '/auth/sign-out',
-      headers: { cookie }
+      headers: { cookie, 'sec-fetch-site': 'same-origin' }
     })
 
     expect(res.statusCode).toBe(302)
@@ -71,5 +71,18 @@ describe('shared auth routes (mock mode)', () => {
 
     // A cross-site GET (link/image) must not be able to trigger sign-out.
     expect(res.statusCode).toBe(404)
+  })
+
+  test('POST /auth/sign-out from a cross-site form is rejected (CSRF)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie, 'sec-fetch-site': 'cross-site' }
+    })
+
+    // An attacker page auto-submitting a cross-site form must not sign the user
+    // out (the SameSite=None cookie would otherwise ride along).
+    expect(res.statusCode).toBe(403)
   })
 })

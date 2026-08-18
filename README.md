@@ -138,6 +138,14 @@ link or image silently log the user out (the live session cookie is
 </form>
 ```
 
+The route also rejects cross-site POSTs (via `Sec-Fetch-Site`), so an attacker
+page cannot auto-submit a form to sign the user out; same-origin form submits
+from your header/account page work normally.
+
+> **Breaking change in 0.3.0:** `/auth/sign-out` is now `POST`-only (was `GET`).
+> Any host that renders a sign-out **link** (`<a href="{{ account.signOutUrl }}">`)
+> must switch it to the form above when upgrading, or sign-out will 404.
+
 ## Views (host wiring)
 
 The plugin's sign-in view **extends the host's `layouts/page.njk`**. For that to

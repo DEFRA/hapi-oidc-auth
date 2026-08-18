@@ -1,6 +1,12 @@
+import { readFileSync } from 'node:fs'
+
 import Hapi from '@hapi/hapi'
 
 import { hapiOidcAuth, PLUGIN_NAME } from './index.js'
+
+const pkg = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+)
 
 const mockOptions = {
   entra: { mode: 'mock' },
@@ -20,6 +26,10 @@ describe('#hapiOidcAuth', () => {
     expect(exposed.redirects.postLogin).toBe('/admin/applications')
 
     await server.stop()
+  })
+
+  test('reports the version from package.json (single source of truth)', () => {
+    expect(hapiOidcAuth.plugin.version).toBe(pkg.version)
   })
 
   test('does not expose the clientSecret on server.plugins', async () => {
