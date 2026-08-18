@@ -23,12 +23,13 @@
         attributes: { "data-testid": "account-summary" }
       }) }}
 
-      {{ govukButton({
-        text: t.signOutButton,
-        href: "/auth/sign-out",
-        classes: "govuk-button--secondary",
-        attributes: { "data-testid": "account-sign-out" }
-      }) }}
+      <form method="post" action="/auth/sign-out">
+        {{ govukButton({
+          text: t.signOutButton,
+          classes: "govuk-button--secondary",
+          attributes: { "data-testid": "account-sign-out" }
+        }) }}
+      </form>
 
     </div>
   </div>

@@ -49,7 +49,19 @@ describe('shared auth routes (mock mode)', () => {
     expect(res.result).toContain('Sam Taylor')
   })
 
-  test('GET /auth/sign-out clears the session and redirects home (mock)', async () => {
+  test('POST /auth/sign-out (same-origin) clears the session and redirects home (mock)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie, 'sec-fetch-site': 'same-origin' }
+    })
+
+    expect(res.statusCode).toBe(302)
+    expect(res.headers.location).toBe('/')
+  })
+
+  test('GET /auth/sign-out is not allowed (CSRF: sign-out is POST-only)', async () => {
     const cookie = await signInCaseOfficer(server)
     const res = await server.inject({
       method: 'GET',
@@ -57,7 +69,48 @@ describe('shared auth routes (mock mode)', () => {
       headers: { cookie }
     })
 
+    // A cross-site GET (link/image) must not be able to trigger sign-out.
+    expect(res.statusCode).toBe(404)
+  })
+
+  test('POST /auth/sign-out from a cross-site form is rejected (CSRF)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie, 'sec-fetch-site': 'cross-site' }
+    })
+
+    // An attacker page auto-submitting a cross-site form must not sign the user
+    // out (the SameSite=None cookie would otherwise ride along).
+    expect(res.statusCode).toBe(403)
+  })
+
+  test('POST /auth/sign-out with no Sec-Fetch-Site header still signs out (fail-open)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie }
+    })
+
+    // Clients without Fetch Metadata (e.g. Safari < 16.4) fall back to POST-only;
+    // sign-out must still work for them (residual risk is a forced logout only).
     expect(res.statusCode).toBe(302)
     expect(res.headers.location).toBe('/')
+  })
+
+  test('POST /auth/sign-out from a same-site (subdomain) form is rejected (CSRF)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie, 'sec-fetch-site': 'same-site' }
+    })
+
+    // A compromised sibling subdomain can auto-submit a form with same-site and
+    // the browser still attaches cookies for the destination host, so same-site
+    // must be rejected the same as cross-site.
+    expect(res.statusCode).toBe(403)
   })
 })

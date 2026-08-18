@@ -1,9 +1,10 @@
 import { getAuthSession, PAGE_PATHS } from './session.js'
 
 // Account details for the top-right of a host's header/service-navigation (who is
-// signed in + a sign-out link), shown on every page once authenticated. Returns
-// null when signed out, or when the session cannot be read, so the header omits
-// the block. A host wires this into its Nunjucks view context (e.g. as `account`).
+// signed in + a sign-out control, rendered as a POST form — see README), shown on
+// every page once authenticated. Returns null when signed out, or when the
+// session cannot be read, so the header omits the block. A host wires this into
+// its Nunjucks view context (e.g. as `account`).
 export function buildAccount(request) {
   // Defensive / test-only: yar decorates request.yar on every real request.
   if (!request?.yar) {

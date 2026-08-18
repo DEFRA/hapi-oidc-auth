@@ -125,7 +125,29 @@ server.route({
 ```
 
 Wire `buildAccount(request)` into your Nunjucks view context (e.g. as `account`)
-to show the signed-in name + sign-out link in your header.
+to show the signed-in name + sign-out control in your header.
+
+**Sign-out is `POST /auth/sign-out` (not GET)** — a GET would let any cross-site
+link or image silently log the user out (the live session cookie is
+`SameSite=None`). Render the sign-out control as a form submit, not a link, using
+`account.signOutUrl` as the form action:
+
+```njk
+<form method="post" action="{{ account.signOutUrl }}">
+  {{ govukButton({ text: "Sign out", classes: "govuk-button--secondary" }) }}
+</form>
+```
+
+The route also rejects cross-site POSTs (via `Sec-Fetch-Site`) in browsers that
+send Fetch Metadata (all current browsers), so an attacker page cannot auto-submit
+a form to sign the user out; same-origin form submits from your header/account
+page work normally. Clients that don't send the header (e.g. Safari < 16.4, some
+WebViews) fall back to POST-only protection — the residual risk is a forced logout
+only, no data exposure.
+
+> **Breaking change in 0.3.0:** `/auth/sign-out` is now `POST`-only (was `GET`).
+> Any host that renders a sign-out **link** (`<a href="{{ account.signOutUrl }}">`)
+> must switch it to the form above when upgrading, or sign-out will 404.
 
 ## Views (host wiring)
 
