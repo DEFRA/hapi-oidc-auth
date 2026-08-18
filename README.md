@@ -138,9 +138,12 @@ link or image silently log the user out (the live session cookie is
 </form>
 ```
 
-The route also rejects cross-site POSTs (via `Sec-Fetch-Site`), so an attacker
-page cannot auto-submit a form to sign the user out; same-origin form submits
-from your header/account page work normally.
+The route also rejects cross-site POSTs (via `Sec-Fetch-Site`) in browsers that
+send Fetch Metadata (all current browsers), so an attacker page cannot auto-submit
+a form to sign the user out; same-origin form submits from your header/account
+page work normally. Clients that don't send the header (e.g. Safari < 16.4, some
+WebViews) fall back to POST-only protection — the residual risk is a forced logout
+only, no data exposure.
 
 > **Breaking change in 0.3.0:** `/auth/sign-out` is now `POST`-only (was `GET`).
 > Any host that renders a sign-out **link** (`<a href="{{ account.signOutUrl }}">`)

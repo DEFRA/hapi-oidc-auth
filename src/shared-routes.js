@@ -7,7 +7,10 @@
 // The live session cookie is SameSite=None, so without this a cross-site request
 // could silently sign a user out (logout CSRF): POST-only blocks the passive
 // vectors (link / image / prefetch / plain navigation), and the Sec-Fetch-Site
-// check blocks an attacker page that auto-submits a cross-site form.
+// check blocks an attacker page that auto-submits a cross-site form — in browsers
+// that send Fetch Metadata (all current browsers). Clients without it (e.g. Safari
+// < 16.4, some WebViews, non-browser clients) fall back to POST-only; the only
+// residual risk is a forced logout (no data exposure).
 
 import { getConfig } from './config.js'
 import { LANG_EN } from './content.js'
@@ -17,9 +20,10 @@ import { PAGE_PATHS, getAuthSession, requireAuth } from './session.js'
 
 // Sec-Fetch-Site is set by the browser and cannot be forged by a page: a
 // same-origin form submit sends `same-origin`, an attacker's cross-site form
-// sends `cross-site`. When the header is absent (very old browsers) we allow the
-// request — the only risk is a forced logout, and blocking would break sign-out
-// for those clients.
+// sends `cross-site`. `same-site` (a sibling subdomain) is trusted — the
+// SameSite=None cookie is already scoped to the host's cookie Domain. When the
+// header is absent (clients without Fetch Metadata) we allow the request: the
+// only risk is a forced logout, and blocking would break sign-out for them.
 function isCrossSiteRequest(request) {
   return request.headers['sec-fetch-site'] === 'cross-site'
 }

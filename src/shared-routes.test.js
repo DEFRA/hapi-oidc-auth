@@ -85,4 +85,32 @@ describe('shared auth routes (mock mode)', () => {
     // out (the SameSite=None cookie would otherwise ride along).
     expect(res.statusCode).toBe(403)
   })
+
+  test('POST /auth/sign-out with no Sec-Fetch-Site header still signs out (fail-open)', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie }
+    })
+
+    // Clients without Fetch Metadata (e.g. Safari < 16.4) fall back to POST-only;
+    // sign-out must still work for them (residual risk is a forced logout only).
+    expect(res.statusCode).toBe(302)
+    expect(res.headers.location).toBe('/')
+  })
+
+  test('POST /auth/sign-out from a same-site (subdomain) form signs out', async () => {
+    const cookie = await signInCaseOfficer(server)
+    const res = await server.inject({
+      method: 'POST',
+      url: '/auth/sign-out',
+      headers: { cookie, 'sec-fetch-site': 'same-site' }
+    })
+
+    // same-site is trusted: the SameSite=None cookie is scoped to the host's own
+    // cookie Domain, so a sibling subdomain is not treated as a cross-site attacker.
+    expect(res.statusCode).toBe(302)
+    expect(res.headers.location).toBe('/')
+  })
 })
