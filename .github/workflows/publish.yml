@@ -1,0 +1,64 @@
+name: Publish to npm
+
+# Publishes @defra/hapi-oidc-auth to npm on every merge to main, using npm
+# Trusted Publishing (OIDC) — no long-lived NPM_TOKEN. The first publish of the
+# package must be performed by a Defra npm org admin, and the org admin must
+# configure the Trusted Publishing policy on npmjs.com to point at this repo +
+# this workflow file. See:
+# https://defra.github.io/software-development-standards/guides/shared_libraries/
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Job-level permissions (a job's `permissions` fully overrides any workflow
+    # level, so no top-level block is needed):
+    permissions:
+      contents: write # create the GitHub Release / tag
+      id-token: write # OIDC token for npm Trusted Publishing
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Publishing the same version twice fails, so only publish when this
+      # version isn't already on the registry (idempotent across re-runs).
+      - name: Check if version exists on npm
+        id: check-version
+        run: |
+          if npm view @defra/hapi-oidc-auth@${{ steps.package-version.outputs.version }} version 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.check-version.outputs.exists == 'false'
+        # access is configured via publishConfig.access in package.json
+        run: npm publish
+
+      - name: Create GitHub Release
+        if: steps.check-version.outputs.exists == 'false'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          name: v${{ steps.package-version.outputs.version }}
+          draft: false
+          prerelease: false
