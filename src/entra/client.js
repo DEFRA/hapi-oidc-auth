@@ -50,7 +50,14 @@ export function getEntraIdConfig() {
     publicBaseUrl: raw.publicBaseUrl,
     redirectUri: raw.redirectPath,
     postLogoutRedirectUri: raw.signOutRedirectUrl,
-    scopes: ['openid', 'profile', 'offline_access'],
+    scopes: [
+      ...new Set([
+        'openid',
+        'profile',
+        'offline_access',
+        ...raw.additionalScopes
+      ])
+    ],
     usePkce: true,
     prompt: ''
   }
