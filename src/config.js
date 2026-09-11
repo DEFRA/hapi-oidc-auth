@@ -32,6 +32,20 @@ function normaliseRoleValues(value) {
   return DEFAULT_ROLE_VALUES
 }
 
+// Normalise consumer-supplied extra scopes to a clean, de-duplicated string
+// array. Accepts an array or a single string (like roleValues), splits any
+// space-delimited entry, and drops blanks — so a bare string isn't silently
+// dropped and a typo can't smuggle an extra scope.
+function normaliseScopes(value) {
+  const list = Array.isArray(value) ? value : [value]
+  const scopes = list
+    .filter((entry) => typeof entry === 'string')
+    .flatMap((entry) => entry.split(/\s+/))
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+  return [...new Set(scopes)]
+}
+
 function resolveEntra(entra = {}) {
   return {
     mode: entra.mode ?? 'mock',
@@ -41,7 +55,11 @@ function resolveEntra(entra = {}) {
     publicBaseUrl: entra.publicBaseUrl ?? '',
     redirectPath: entra.redirectPath ?? '/auth/entra/callback',
     signOutRedirectUrl: entra.signOutRedirectUrl ?? '/',
-    roleValues: normaliseRoleValues(entra.roleValues)
+    roleValues: normaliseRoleValues(entra.roleValues),
+    // Extra OAuth scopes on top of the OIDC defaults — e.g. a custom API scope
+    // (api://<client-id>/access_as_user) so the resulting access token's aud is
+    // the app's own client id. Optional; defaults to none.
+    additionalScopes: normaliseScopes(entra.additionalScopes)
   }
 }
 

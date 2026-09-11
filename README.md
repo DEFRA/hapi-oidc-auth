@@ -38,7 +38,14 @@ await server.register({
       // Required: the Entra app-role value(s) that grant access. There is no
       // default — declare whatever value(s) your app's tokens carry (name the
       // App role whatever suits your service).
-      roleValues: ['case_officer']
+      roleValues: ['case_officer'],
+      // Optional: extra OAuth scopes to request on top of the OIDC defaults
+      // (openid, profile, offline_access). Accepts a single string or an array
+      // (like roleValues). Use a custom API scope so the access token's `aud` is
+      // your app's own client id — e.g. after "Expose an API" on the same app
+      // registration:
+      // additionalScopes: 'api://<client-id>/access_as_user'
+      additionalScopes: []
     },
 
     // Where the user lands after sign-in / out (app-specific)

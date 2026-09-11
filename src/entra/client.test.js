@@ -85,6 +85,37 @@ describe('#getEntraIdConfig', () => {
       '/.well-known/openid-configuration'
     )
   })
+
+  test('requests the OIDC scopes by default', () => {
+    setLiveConfig()
+    expect(getEntraIdConfig().scopes).toEqual([
+      'openid',
+      'profile',
+      'offline_access'
+    ])
+  })
+
+  test('appends configured additionalScopes (e.g. a custom API scope)', () => {
+    setLiveConfig({ additionalScopes: ['api://entra-client/access_as_user'] })
+    expect(getEntraIdConfig().scopes).toEqual([
+      'openid',
+      'profile',
+      'offline_access',
+      'api://entra-client/access_as_user'
+    ])
+  })
+
+  test('does not duplicate a scope already in the OIDC defaults', () => {
+    setLiveConfig({
+      additionalScopes: ['openid', 'api://entra-client/access_as_user']
+    })
+    expect(getEntraIdConfig().scopes).toEqual([
+      'openid',
+      'profile',
+      'offline_access',
+      'api://entra-client/access_as_user'
+    ])
+  })
 })
 
 describe('#getEntraConfigSummary', () => {

@@ -32,4 +32,29 @@ describe('#config', () => {
       setConfig({ entra: { roleValues: 'admin' } }).entra.roleValues
     ).toEqual(['admin'])
   })
+
+  test('additionalScopes default to none', () => {
+    expect(setConfig({ entra: {} }).entra.additionalScopes).toEqual([])
+  })
+
+  test('additionalScopes accept a single string (like roleValues), trimmed', () => {
+    expect(
+      setConfig({ entra: { additionalScopes: ' api://abc/access_as_user ' } })
+        .entra.additionalScopes
+    ).toEqual(['api://abc/access_as_user'])
+  })
+
+  test('additionalScopes are normalised: blanks dropped, whitespace split, de-duplicated', () => {
+    expect(
+      setConfig({
+        entra: { additionalScopes: ['openid extra', 'openid', ''] }
+      }).entra.additionalScopes
+    ).toEqual(['openid', 'extra'])
+  })
+
+  test('additionalScopes ignore a non-string / non-array value', () => {
+    expect(
+      setConfig({ entra: { additionalScopes: 123 } }).entra.additionalScopes
+    ).toEqual([])
+  })
 })
