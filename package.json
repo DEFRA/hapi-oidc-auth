@@ -42,7 +42,7 @@
     "@hapi/hapi": "21.4.9",
     "@hapi/vision": "7.0.3",
     "@hapi/yar": "11.0.3",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.12",
     "eslint": "9.39.2",
     "govuk-frontend": "6.3.0",
     "neostandard": "0.13.0",
